@@ -1,0 +1,10 @@
+{
+  "name": "typora-writing-copilot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Standalone AI writing copilot for Typora.",
+  "type": "module",
+  "scripts": {
+    "check": "node ./scripts/check.mjs"
+  }
+}
