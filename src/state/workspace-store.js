@@ -20,11 +20,21 @@ function cloneMessages(messages = []) {
     }));
 }
 
+function pickString(rawConfig = {}, fallbackConfig = {}, key) {
+  if (Object.prototype.hasOwnProperty.call(rawConfig, key) && rawConfig[key] != null) {
+    return String(rawConfig[key]);
+  }
+  if (Object.prototype.hasOwnProperty.call(fallbackConfig, key) && fallbackConfig[key] != null) {
+    return String(fallbackConfig[key]);
+  }
+  return "";
+}
+
 function normalizeProviderConfig(rawConfig = {}, fallbackConfig = {}) {
   return {
-    apiKey: String(rawConfig.apiKey || fallbackConfig.apiKey || ""),
-    baseUrl: String(rawConfig.baseUrl || fallbackConfig.baseUrl || ""),
-    model: String(rawConfig.model || fallbackConfig.model || ""),
+    apiKey: pickString(rawConfig, fallbackConfig, "apiKey"),
+    baseUrl: pickString(rawConfig, fallbackConfig, "baseUrl"),
+    model: pickString(rawConfig, fallbackConfig, "model"),
   };
 }
 
@@ -32,9 +42,9 @@ function normalizeSearchConfig(rawConfig = {}, fallbackConfig = {}) {
   const maxResults = Number(rawConfig.maxResults || fallbackConfig.maxResults || 5);
 
   return {
-    provider: String(rawConfig.provider || fallbackConfig.provider || "tavily"),
-    apiKey: String(rawConfig.apiKey || fallbackConfig.apiKey || ""),
-    baseUrl: String(rawConfig.baseUrl || fallbackConfig.baseUrl || ""),
+    provider: pickString(rawConfig, fallbackConfig, "provider") || "tavily",
+    apiKey: pickString(rawConfig, fallbackConfig, "apiKey"),
+    baseUrl: pickString(rawConfig, fallbackConfig, "baseUrl"),
     maxResults: Number.isFinite(maxResults) && maxResults > 0 ? maxResults : 5,
   };
 }

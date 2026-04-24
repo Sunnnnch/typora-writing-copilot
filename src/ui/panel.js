@@ -197,6 +197,9 @@ export function createPanelController({ config, shell, session, resultActions, p
     forceFreshConversation: false,
     settingsTesting: false,
     settingsTestState: null,
+    settingsDefaultProviderDraft: null,
+    settingsProviderDrafts: {},
+    settingsSearchDraft: null,
     lastRequestMeta: null,
     lastAppliedChange: null,
     pendingDeleteConversationId: null,
@@ -678,6 +681,15 @@ export function createPanelController({ config, shell, session, resultActions, p
     };
   }
 
+  function rememberCurrentProviderDraft() {
+    if (!elements || !state.settingsProviderId) return;
+    state.settingsProviderDrafts[state.settingsProviderId] = getDraftSettingsProviderConfig();
+  }
+
+  function getSettingsProviderConfig(providerId) {
+    return state.settingsProviderDrafts[providerId] || store.getProviderConfig(providerId);
+  }
+
   function getDraftSearchConfig() {
     if (!elements) {
       return store.getSearchConfig();
@@ -691,15 +703,24 @@ export function createPanelController({ config, shell, session, resultActions, p
     };
   }
 
+  function rememberSearchDraft() {
+    if (!elements) return;
+    state.settingsSearchDraft = getDraftSearchConfig();
+  }
+
+  function getSettingsSearchConfig() {
+    return state.settingsSearchDraft || store.getSearchConfig();
+  }
+
   function renderSettings() {
     if (!elements) return;
 
     const providerIds = providers.list();
-    const defaultProviderId = store.getDefaultProviderId() || providers.getDefaultProviderId();
+    const defaultProviderId = state.settingsDefaultProviderDraft || store.getDefaultProviderId() || providers.getDefaultProviderId();
     const settingsProviderId = providerIds.includes(state.settingsProviderId)
       ? state.settingsProviderId
       : defaultProviderId;
-    const providerConfig = store.getProviderConfig(settingsProviderId);
+    const providerConfig = getSettingsProviderConfig(settingsProviderId);
 
     state.settingsProviderId = settingsProviderId;
 
@@ -709,7 +730,7 @@ export function createPanelController({ config, shell, session, resultActions, p
     elements.settingsBaseUrl.value = providerConfig.baseUrl || "";
     elements.settingsModel.value = providerConfig.model || "";
     elements.settingsApiKey.value = providerConfig.apiKey || "";
-    const searchConfig = store.getSearchConfig();
+    const searchConfig = getSettingsSearchConfig();
     elements.settingsSearchBaseUrl.value = searchConfig.baseUrl || "";
     elements.settingsSearchApiKey.value = searchConfig.apiKey || "";
     elements.settingsAutoApply.checked = store.getAutoApplySelectionEdits();
@@ -1432,16 +1453,41 @@ export function createPanelController({ config, shell, session, resultActions, p
     });
 
     elements.settingsProvider.addEventListener("change", () => {
+      rememberCurrentProviderDraft();
       state.settingsProviderId = elements.settingsProvider.value;
       state.settingsTestState = null;
       renderSettings();
     });
 
+    elements.settingsDefaultProvider.addEventListener("change", () => {
+      rememberCurrentProviderDraft();
+      state.settingsDefaultProviderDraft = elements.settingsDefaultProvider.value;
+      state.settingsProviderId = elements.settingsDefaultProvider.value;
+      state.settingsTestState = null;
+      renderSettings();
+    });
+
+    [
+      elements.settingsBaseUrl,
+      elements.settingsModel,
+      elements.settingsApiKey,
+    ].forEach(input => {
+      input.addEventListener("input", rememberCurrentProviderDraft);
+    });
+
+    [
+      elements.settingsSearchBaseUrl,
+      elements.settingsSearchApiKey,
+    ].forEach(input => {
+      input.addEventListener("input", rememberSearchDraft);
+    });
+
     elements.settingsTest.addEventListener("click", async () => {
       if (state.settingsTesting) return;
 
+      rememberCurrentProviderDraft();
       const providerId = state.settingsProviderId;
-      const providerConfig = getDraftSettingsProviderConfig();
+      const providerConfig = getSettingsProviderConfig(providerId);
 
       state.settingsTesting = true;
       state.settingsTestState = {
@@ -1471,17 +1517,24 @@ export function createPanelController({ config, shell, session, resultActions, p
     });
 
     elements.settingsSave.addEventListener("click", () => {
+      rememberCurrentProviderDraft();
+      rememberSearchDraft();
+
       const previousDefault = store.getDefaultProviderId();
-      const nextDefault = elements.settingsDefaultProvider.value;
+      const nextDefault = state.settingsDefaultProviderDraft || elements.settingsDefaultProvider.value;
+      const providerIds = providers.list();
 
       store.setDefaultProviderId(nextDefault);
       store.setAutoApplySelectionEdits(elements.settingsAutoApply.checked);
-      store.updateProviderConfig(state.settingsProviderId, {
-        baseUrl: elements.settingsBaseUrl.value.trim(),
-        model: elements.settingsModel.value.trim(),
-        apiKey: elements.settingsApiKey.value.trim(),
+      Object.entries(state.settingsProviderDrafts).forEach(([providerId, providerConfig]) => {
+        if (providerIds.includes(providerId)) {
+          store.updateProviderConfig(providerId, providerConfig);
+        }
       });
-      store.updateSearchConfig(getDraftSearchConfig());
+      store.updateSearchConfig(getSettingsSearchConfig());
+      state.settingsDefaultProviderDraft = null;
+      state.settingsProviderDrafts = {};
+      state.settingsSearchDraft = null;
 
       if (!state.messages.length || state.providerId === previousDefault) {
         state.providerId = nextDefault;
