@@ -2,6 +2,7 @@ param(
     [string]$TyporaPath,
     [string]$PluginHome,
     [switch]$NoPause,
+    [switch]$RestoreBackup,
     [string]$LogPath
 )
 
@@ -104,6 +105,9 @@ function Ensure-AdministratorIfNeeded {
     }
     if ($NoPause) {
         $arguments += "-NoPause"
+    }
+    if ($RestoreBackup) {
+        $arguments += "-RestoreBackup"
     }
     if ($LogPath) {
         $arguments += @("-LogPath", "`"$LogPath`"")
@@ -240,6 +244,10 @@ function Resolve-WindowHtmlPath {
             Add-UniqueItem -List $candidateFiles -Value (Join-Path $resolvedInput "window.html")
             Add-CandidateFile -RootPath $resolvedInput -RelativePath "resources\\window.html"
             Add-CandidateFile -RootPath $resolvedInput -RelativePath "resources\\app\\window.html"
+        } elseif ([System.IO.Path]::GetFileName($resolvedInput) -ieq "Typora.exe") {
+            $exeRoot = Split-Path -Parent $resolvedInput
+            Add-CandidateFile -RootPath $exeRoot -RelativePath "resources\\window.html"
+            Add-CandidateFile -RootPath $exeRoot -RelativePath "resources\\app\\window.html"
         } else {
             Add-UniqueItem -List $candidateFiles -Value $resolvedInput
         }
@@ -264,7 +272,8 @@ function Resolve-WindowHtmlPath {
     }
 
     foreach ($candidate in $candidateFiles) {
-        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf) -and
+            ([System.IO.Path]::GetFileName($candidate) -ieq "window.html")) {
             return (Resolve-Path -LiteralPath $candidate).Path
         }
     }
@@ -285,6 +294,20 @@ function Remove-Injection {
         [System.Text.RegularExpressions.MatchEvaluator]{ param($m) "`r`n" }
     )
     Set-Content -LiteralPath $WindowHtmlPath -Value $updated.TrimEnd() -Encoding UTF8 -NoNewline
+}
+
+function Restore-WindowBackup {
+    param(
+        [string]$WindowHtmlPath
+    )
+
+    $installRoot = Split-Path -Parent $WindowHtmlPath
+    $backupPath = Join-Path $installRoot "window.html.typora-writing-copilot.bak"
+    if (-not (Test-Path -LiteralPath $backupPath -PathType Leaf)) {
+        throw "Backup not found: $backupPath"
+    }
+    Copy-Item -LiteralPath $backupPath -Destination $WindowHtmlPath -Force
+    Write-Host "Backup restored : $backupPath" -ForegroundColor Green
 }
 
 $banner = @"
@@ -312,7 +335,11 @@ try {
     Write-Host "Typora window  : $windowHtmlPath" -ForegroundColor Cyan
     Write-Host "Plugin home    : $pluginHomeRoot" -ForegroundColor Cyan
 
-    Remove-Injection -WindowHtmlPath $windowHtmlPath
+    if ($RestoreBackup) {
+        Restore-WindowBackup -WindowHtmlPath $windowHtmlPath
+    } else {
+        Remove-Injection -WindowHtmlPath $windowHtmlPath
+    }
 
     if (Test-Path -LiteralPath $pluginHomeRoot) {
         Remove-Item -LiteralPath $pluginHomeRoot -Recurse -Force

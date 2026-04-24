@@ -60,6 +60,8 @@ export function createDefaultConfig(overrides = {}) {
     },
     search: {
       provider: "tavily",
+      baseUrl: "https://api.tavily.com",
+      apiKey: "",
       maxResults: 5,
     },
     network: {

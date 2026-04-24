@@ -10,7 +10,7 @@ export function createProviderRegistry({ config, auth, i18n, store }) {
     ["zhipu", createOpenAICompatibleProvider({ providerId: "zhipu", auth, i18n })],
     ["openrouter", createOpenAICompatibleProvider({ providerId: "openrouter", auth, i18n })],
     ["openai-compatible", createOpenAICompatibleProvider({ providerId: "openai-compatible", auth, i18n })],
-    ["gemini", createGeminiProvider({ auth, i18n })],
+    ["gemini", createGeminiProvider({ auth, i18n, config })],
   ]);
 
   return {

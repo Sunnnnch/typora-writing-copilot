@@ -234,6 +234,10 @@ function Resolve-WindowHtmlPath {
             Add-UniqueItem -List $candidateFiles -Value (Join-Path $resolvedInput "window.html")
             Add-CandidateFile -RootPath $resolvedInput -RelativePath "resources\\window.html"
             Add-CandidateFile -RootPath $resolvedInput -RelativePath "resources\\app\\window.html"
+        } elseif ([System.IO.Path]::GetFileName($resolvedInput) -ieq "Typora.exe") {
+            $exeRoot = Split-Path -Parent $resolvedInput
+            Add-CandidateFile -RootPath $exeRoot -RelativePath "resources\\window.html"
+            Add-CandidateFile -RootPath $exeRoot -RelativePath "resources\\app\\window.html"
         } else {
             Add-UniqueItem -List $candidateFiles -Value $resolvedInput
         }
@@ -254,7 +258,8 @@ function Resolve-WindowHtmlPath {
     }
 
     foreach ($candidate in $candidateFiles) {
-        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf)) {
+        if ($candidate -and (Test-Path -LiteralPath $candidate -PathType Leaf) -and
+            ([System.IO.Path]::GetFileName($candidate) -ieq "window.html")) {
             return (Resolve-Path -LiteralPath $candidate).Path
         }
     }

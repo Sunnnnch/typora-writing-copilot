@@ -678,6 +678,19 @@ export function createPanelController({ config, shell, session, resultActions, p
     };
   }
 
+  function getDraftSearchConfig() {
+    if (!elements) {
+      return store.getSearchConfig();
+    }
+
+    return {
+      baseUrl: elements.settingsSearchBaseUrl.value.trim(),
+      apiKey: elements.settingsSearchApiKey.value.trim(),
+      provider: "tavily",
+      maxResults: 5,
+    };
+  }
+
   function renderSettings() {
     if (!elements) return;
 
@@ -696,6 +709,9 @@ export function createPanelController({ config, shell, session, resultActions, p
     elements.settingsBaseUrl.value = providerConfig.baseUrl || "";
     elements.settingsModel.value = providerConfig.model || "";
     elements.settingsApiKey.value = providerConfig.apiKey || "";
+    const searchConfig = store.getSearchConfig();
+    elements.settingsSearchBaseUrl.value = searchConfig.baseUrl || "";
+    elements.settingsSearchApiKey.value = searchConfig.apiKey || "";
     elements.settingsAutoApply.checked = store.getAutoApplySelectionEdits();
     elements.settingsTest.disabled = state.settingsTesting;
     elements.settingsTest.textContent = state.settingsTesting
@@ -980,11 +996,15 @@ export function createPanelController({ config, shell, session, resultActions, p
     elements.settingsBaseUrlLabel.textContent = i18n.t("panel.field.baseUrl");
     elements.settingsModelLabel.textContent = i18n.t("panel.field.model");
     elements.settingsApiKeyLabel.textContent = i18n.t("panel.field.apiKey");
+    elements.settingsSearchBaseUrlLabel.textContent = i18n.t("panel.field.searchBaseUrl");
+    elements.settingsSearchApiKeyLabel.textContent = i18n.t("panel.field.searchApiKey");
     elements.settingsAutoApplyLabel.textContent = i18n.t("panel.field.autoApplySelectionEdits");
     elements.settingsAutoApplyCopy.textContent = i18n.t("panel.settings.autoApplySelectionEditsHelp");
     elements.settingsBaseUrl.placeholder = i18n.t("panel.settings.baseUrlPlaceholder");
     elements.settingsModel.placeholder = i18n.t("panel.settings.modelPlaceholder");
     elements.settingsApiKey.placeholder = i18n.t("panel.settings.apiKeyPlaceholder");
+    elements.settingsSearchBaseUrl.placeholder = i18n.t("panel.settings.searchBaseUrlPlaceholder");
+    elements.settingsSearchApiKey.placeholder = i18n.t("panel.settings.searchApiKeyPlaceholder");
     elements.settingsTest.textContent = state.settingsTesting
       ? i18n.t("panel.settings.testing")
       : i18n.t("panel.settings.test");
@@ -1146,6 +1166,14 @@ export function createPanelController({ config, shell, session, resultActions, p
             <span class="twc-field-label" data-role="settings-api-key-label"></span>
             <input type="password" class="twc-input" data-role="settings-api-key">
           </label>
+          <label class="twc-field twc-field-span">
+            <span class="twc-field-label" data-role="settings-search-base-url-label"></span>
+            <input type="text" class="twc-input" data-role="settings-search-base-url">
+          </label>
+          <label class="twc-field twc-field-span">
+            <span class="twc-field-label" data-role="settings-search-api-key-label"></span>
+            <input type="password" class="twc-input" data-role="settings-search-api-key">
+          </label>
           <label class="twc-check twc-field-span">
             <input type="checkbox" data-role="settings-auto-apply">
             <span>
@@ -1222,6 +1250,8 @@ export function createPanelController({ config, shell, session, resultActions, p
       settingsBaseUrlLabel: root.querySelector('[data-role="settings-base-url-label"]'),
       settingsModelLabel: root.querySelector('[data-role="settings-model-label"]'),
       settingsApiKeyLabel: root.querySelector('[data-role="settings-api-key-label"]'),
+      settingsSearchBaseUrlLabel: root.querySelector('[data-role="settings-search-base-url-label"]'),
+      settingsSearchApiKeyLabel: root.querySelector('[data-role="settings-search-api-key-label"]'),
       settingsAutoApplyLabel: root.querySelector('[data-role="settings-auto-apply-label"]'),
       settingsAutoApplyCopy: root.querySelector('[data-role="settings-auto-apply-copy"]'),
       settingsDefaultProvider: root.querySelector('[data-role="settings-default-provider"]'),
@@ -1229,6 +1259,8 @@ export function createPanelController({ config, shell, session, resultActions, p
       settingsBaseUrl: root.querySelector('[data-role="settings-base-url"]'),
       settingsModel: root.querySelector('[data-role="settings-model"]'),
       settingsApiKey: root.querySelector('[data-role="settings-api-key"]'),
+      settingsSearchBaseUrl: root.querySelector('[data-role="settings-search-base-url"]'),
+      settingsSearchApiKey: root.querySelector('[data-role="settings-search-api-key"]'),
       settingsAutoApply: root.querySelector('[data-role="settings-auto-apply"]'),
       settingsStatus: root.querySelector('[data-role="settings-status"]'),
       settingsNote: root.querySelector('[data-role="settings-note"]'),
@@ -1449,6 +1481,7 @@ export function createPanelController({ config, shell, session, resultActions, p
         model: elements.settingsModel.value.trim(),
         apiKey: elements.settingsApiKey.value.trim(),
       });
+      store.updateSearchConfig(getDraftSearchConfig());
 
       if (!state.messages.length || state.providerId === previousDefault) {
         state.providerId = nextDefault;

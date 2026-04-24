@@ -20,7 +20,7 @@ export function createWritingCopilotApp(overrides = {}) {
   const providers = createProviderRegistry({ config, auth, i18n, store });
   const connectionTester = createProviderConnectionTester({ config, i18n });
   const resultActions = createResultActions({ shell });
-  const search = createWebSearchService({ config, auth, providers, i18n });
+  const search = createWebSearchService({ config, auth, providers, i18n, store });
   const session = createChatSession({ config, shell, providers, search, resultActions, i18n });
   const panel = createPanelController({
     config,

@@ -128,6 +128,7 @@ function Set-UiBusy {
     $autoDetectButton.Enabled = -not $Busy
     $installButton.Enabled = -not $Busy
     $uninstallButton.Enabled = -not $Busy
+    $restoreButton.Enabled = -not $Busy
     $closeButton.Enabled = -not $Busy
 }
 
@@ -135,7 +136,8 @@ function Invoke-WorkerScript {
     param(
         [string]$ScriptPath,
         [string]$TyporaPath,
-        [string]$PluginHome
+        [string]$PluginHome,
+        [bool]$RestoreBackup = $false
     )
 
     $logName = if ([System.IO.Path]::GetFileName($ScriptPath) -like "uninstall*") {
@@ -161,6 +163,9 @@ function Invoke-WorkerScript {
     }
     if (-not [string]::IsNullOrWhiteSpace($PluginHome)) {
         $arguments += @("-PluginHome", $PluginHome)
+    }
+    if ($RestoreBackup) {
+        $arguments += "-RestoreBackup"
     }
 
     $process = Start-Process -FilePath "powershell.exe" -ArgumentList $arguments -Wait -PassThru -WindowStyle Hidden
@@ -193,7 +198,7 @@ $titleLabel.Location = New-Object System.Drawing.Point(20, 18)
 $form.Controls.Add($titleLabel)
 
 $hintLabel = New-Object System.Windows.Forms.Label
-$hintLabel.Text = "选择 Typora 目录和插件目录，然后点击安装。"
+$hintLabel.Text = "选择 Typora 目录和插件目录，然后点击安装、卸载或恢复备份。"
 $hintLabel.AutoSize = $true
 $hintLabel.Location = New-Object System.Drawing.Point(22, 52)
 $form.Controls.Add($hintLabel)
@@ -282,9 +287,15 @@ $form.Controls.Add($installButton)
 
 $uninstallButton = New-Object System.Windows.Forms.Button
 $uninstallButton.Text = "卸载"
-$uninstallButton.Location = New-Object System.Drawing.Point(608, 244)
+$uninstallButton.Location = New-Object System.Drawing.Point(598, 244)
 $uninstallButton.Size = New-Object System.Drawing.Size(105, 34)
 $form.Controls.Add($uninstallButton)
+
+$restoreButton = New-Object System.Windows.Forms.Button
+$restoreButton.Text = "恢复备份"
+$restoreButton.Location = New-Object System.Drawing.Point(380, 244)
+$restoreButton.Size = New-Object System.Drawing.Size(105, 34)
+$form.Controls.Add($restoreButton)
 
 $logLabel = New-Object System.Windows.Forms.Label
 $logLabel.Text = "输出日志"
@@ -339,16 +350,20 @@ function Run-Action {
     }
 
     Set-UiBusy -Busy $true
-    $actionLabel = if ($Mode -eq "uninstall") { "正在卸载..." } else { "正在安装..." }
+    $actionLabel = if ($Mode -eq "restore") { "正在恢复备份..." } elseif ($Mode -eq "uninstall") { "正在卸载..." } else { "正在安装..." }
     $outputTextBox.Text = $actionLabel + [Environment]::NewLine
     $form.Refresh()
 
     try {
-        $scriptPath = if ($Mode -eq "uninstall") { $uninstallScriptPath } else { $installScriptPath }
-        $result = Invoke-WorkerScript -ScriptPath $scriptPath -TyporaPath $typoraPath -PluginHome $pluginHome
+        $scriptPath = if ($Mode -eq "install") { $installScriptPath } else { $uninstallScriptPath }
+        $result = Invoke-WorkerScript `
+            -ScriptPath $scriptPath `
+            -TyporaPath $typoraPath `
+            -PluginHome $pluginHome `
+            -RestoreBackup ($Mode -eq "restore")
         $outputTextBox.Text = if ($result.LogContent) { $result.LogContent } else { "没有捕获到输出内容。" }
-        $doneText = if ($Mode -eq "uninstall") { "卸载成功。" } else { "安装成功。" }
-        $failedActionText = if ($Mode -eq "uninstall") { "卸载" } else { "安装" }
+        $doneText = if ($Mode -eq "restore") { "备份恢复成功。" } elseif ($Mode -eq "uninstall") { "卸载成功。" } else { "安装成功。" }
+        $failedActionText = if ($Mode -eq "restore") { "恢复备份" } elseif ($Mode -eq "uninstall") { "卸载" } else { "安装" }
 
         if ($result.ExitCode -eq 0) {
             [System.Windows.Forms.MessageBox]::Show(
@@ -380,5 +395,6 @@ function Run-Action {
 
 $installButton.Add_Click({ Run-Action -Mode "install" })
 $uninstallButton.Add_Click({ Run-Action -Mode "uninstall" })
+$restoreButton.Add_Click({ Run-Action -Mode "restore" })
 
 [void]$form.ShowDialog()

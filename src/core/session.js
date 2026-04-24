@@ -94,6 +94,7 @@ export function createChatSession({ shell, providers, search, i18n }) {
         return search.search({
           query: prompt || context,
           selectionCapture,
+          abortSignal,
         });
       }
 

@@ -14,6 +14,19 @@ function ensureGeminiModelsUrl(baseUrl, apiKey) {
   return `${withVersion}/models?key=${encodeURIComponent(apiKey)}`;
 }
 
+function ensureOpenAICompletionUrl(baseUrl) {
+  return `${trimTrailingSlash(baseUrl)}/chat/completions`;
+}
+
+function ensureGeminiCompletionUrl(baseUrl, model, apiKey) {
+  const trimmed = trimTrailingSlash(baseUrl);
+  const withVersion = /\/v\d+(beta)?$/i.test(trimmed)
+    ? trimmed
+    : `${trimmed}/v1beta`;
+  const modelName = String(model || "").replace(/^models\//, "");
+  return `${withVersion}/models/${encodeURIComponent(modelName)}:generateContent?key=${encodeURIComponent(apiKey)}`;
+}
+
 async function readResponsePayload(response) {
   const text = await response.text();
   if (!text) {
@@ -45,6 +58,10 @@ function summarizeErrorPayload(payload) {
 }
 
 function summarizeSuccessPayload(providerId, payload, i18n) {
+  if (payload?.__chatTest) {
+    return i18n.t("panel.settings.testChatSuccess");
+  }
+
   if (providerId === "gemini") {
     const count = Array.isArray(payload?.models) ? payload.models.length : 0;
     const firstModel = payload?.models?.[0]?.name || "";
@@ -65,6 +82,7 @@ function summarizeSuccessPayload(providerId, payload, i18n) {
 function buildRequest(providerId, providerConfig) {
   const baseUrl = trimTrailingSlash(providerConfig?.baseUrl);
   const apiKey = String(providerConfig?.apiKey || "").trim();
+  const model = String(providerConfig?.model || "").trim();
 
   if (!baseUrl) {
     throw new Error("missing-base-url");
@@ -74,6 +92,30 @@ function buildRequest(providerId, providerConfig) {
   }
 
   if (providerId === "gemini") {
+    if (model) {
+      return {
+        url: ensureGeminiCompletionUrl(baseUrl, model, apiKey),
+        options: {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                role: "user",
+                parts: [{ text: "ping" }],
+              },
+            ],
+            generationConfig: {
+              maxOutputTokens: 4,
+            },
+          }),
+        },
+        chatTest: true,
+      };
+    }
+
     return {
       url: ensureGeminiModelsUrl(baseUrl, apiKey),
       options: {
@@ -82,6 +124,27 @@ function buildRequest(providerId, providerConfig) {
           Accept: "application/json",
         },
       },
+    };
+  }
+
+  if (model) {
+    return {
+      url: ensureOpenAICompletionUrl(baseUrl),
+      options: {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model,
+          messages: [{ role: "user", content: "ping" }],
+          max_tokens: 4,
+          stream: false,
+        }),
+      },
+      chatTest: true,
     };
   }
 
@@ -136,7 +199,7 @@ export function createProviderConnectionTester({ config, i18n }) {
           ...request.options,
           signal: controller?.signal,
         });
-        const payload = await readResponsePayload(response);
+        let payload = await readResponsePayload(response);
 
         if (!response.ok) {
           const detail = summarizeErrorPayload(payload);
@@ -148,6 +211,10 @@ export function createProviderConnectionTester({ config, i18n }) {
               detail: detail || i18n.t("panel.settings.testNoDetail"),
             }),
           };
+        }
+
+        if (request.chatTest) {
+          payload = { __chatTest: true };
         }
 
         return {

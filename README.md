@@ -29,8 +29,11 @@ It is a writing-focused copilot built around:
 ## Provider Status
 
 - `OpenAI-compatible` providers use a live HTTP `chat/completions` transport
-- `Gemini` is still a preview provider
-- web search is still a preview adapter
+- `Gemini` uses the live Google Generative Language API transport
+- web search uses the live Tavily Search API adapter
+
+The settings panel includes provider credentials, model IDs, connection testing, and Tavily search credentials.
+If a model is configured, the test button sends a lightweight generation request instead of only listing models.
 
 ## Project Structure
 
@@ -52,7 +55,7 @@ The GUI installer lets you:
 
 - choose the Typora folder
 - choose where plugin files should be stored
-- install or uninstall without typing command-line arguments
+- install, uninstall, or restore the original `window.html` backup without typing command-line arguments
 
 CLI alternatives:
 
@@ -96,5 +99,6 @@ npm run check
 ## Notes
 
 - Provider configuration is currently stored in local browser storage, not the system credential store.
+- Tavily search requires its own API key in Settings.
 - This repository is intended to be used as an independent project, not as a subdirectory of another plugin platform.
 - Before publishing, review your local runtime storage separately; API keys are not meant to live in tracked files.

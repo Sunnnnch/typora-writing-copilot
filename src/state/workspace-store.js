@@ -28,6 +28,17 @@ function normalizeProviderConfig(rawConfig = {}, fallbackConfig = {}) {
   };
 }
 
+function normalizeSearchConfig(rawConfig = {}, fallbackConfig = {}) {
+  const maxResults = Number(rawConfig.maxResults || fallbackConfig.maxResults || 5);
+
+  return {
+    provider: String(rawConfig.provider || fallbackConfig.provider || "tavily"),
+    apiKey: String(rawConfig.apiKey || fallbackConfig.apiKey || ""),
+    baseUrl: String(rawConfig.baseUrl || fallbackConfig.baseUrl || ""),
+    maxResults: Number.isFinite(maxResults) && maxResults > 0 ? maxResults : 5,
+  };
+}
+
 function buildDefaultProviderConfigs(config) {
   const providerIds = config?.providers?.apiKeyProviders || [];
   const presets = config?.providers?.presets || {};
@@ -44,6 +55,7 @@ function buildInitialState(config) {
       defaultProvider: config?.providers?.defaultProvider || "openai",
       autoApplySelectionEdits: config?.ui?.autoApplySelectionEdits !== false,
       providerConfigs: buildDefaultProviderConfigs(config),
+      searchConfig: normalizeSearchConfig(config?.search, {}),
     },
     conversations: {},
     order: [],
@@ -81,6 +93,7 @@ function normalizeState(rawState, config) {
   const parsedSettings = rawState?.settings || {};
   const incomingConfigs = parsedSettings.providerConfigs || {};
   const providerConfigs = { ...initial.settings.providerConfigs };
+  const searchConfig = normalizeSearchConfig(parsedSettings.searchConfig, initial.settings.searchConfig);
 
   Object.keys(providerConfigs).forEach(providerId => {
     providerConfigs[providerId] = normalizeProviderConfig(
@@ -116,6 +129,7 @@ function normalizeState(rawState, config) {
       defaultProvider: String(parsedSettings.defaultProvider || initial.settings.defaultProvider),
       autoApplySelectionEdits: parsedSettings.autoApplySelectionEdits !== false,
       providerConfigs,
+      searchConfig,
     },
     conversations,
     order: orderedIds,
@@ -203,6 +217,20 @@ export function createWorkspaceStore({ config }) {
       state.settings.providerConfigs[providerId] = nextConfig;
       commit();
       return nextConfig;
+    },
+    getSearchConfig() {
+      return normalizeSearchConfig(state.settings.searchConfig, buildInitialState(config).settings.searchConfig);
+    },
+    updateSearchConfig(patch = {}) {
+      state.settings.searchConfig = normalizeSearchConfig(
+        {
+          ...state.settings.searchConfig,
+          ...patch,
+        },
+        buildInitialState(config).settings.searchConfig,
+      );
+      commit();
+      return api.getSearchConfig();
     },
     listConversations() {
       return state.order

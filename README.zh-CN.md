@@ -29,8 +29,11 @@ Typora 写作副驾是一个面向 Typora 的独立 AI 写作助手。
 ## Provider 状态
 
 - `OpenAI-compatible` 已接上真实 HTTP `chat/completions` 传输
-- `Gemini` 目前还是预览 provider
-- 联网搜索目前还是预览 adapter
+- `Gemini` 已接上 Google Generative Language API 真实传输
+- 联网搜索已接上 Tavily Search API 真实适配器
+
+设置面板里可以配置服务商凭据、模型 ID、连接测试和 Tavily 搜索凭据。
+如果已经填写模型，测试按钮会发起一次轻量生成请求，而不是只拉取模型列表。
 
 ## 目录结构
 
@@ -52,7 +55,7 @@ Typora 写作副驾是一个面向 Typora 的独立 AI 写作助手。
 
 - 选择 Typora 目录
 - 选择插件文件存放目录
-- 点按钮安装或卸载
+- 点按钮安装、卸载，或恢复原始 `window.html` 备份
 
 命令行方式：
 
@@ -96,5 +99,6 @@ npm run check
 ## 说明
 
 - Provider 配置目前保存在本地浏览器存储里，还没有切到系统密钥库。
+- Tavily 联网搜索需要在设置里单独填写搜索 API Key。
 - 这个仓库设计成独立项目使用，不依赖上层插件平台。
 - 发布前请另外检查你本机运行时存储；API key 不应保存在被跟踪的仓库文件里。
