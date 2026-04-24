@@ -57,6 +57,22 @@ function summarizeErrorPayload(payload) {
   return "";
 }
 
+function getHttpStatusHint(status, i18n) {
+  if (status === 401 || status === 403) {
+    return i18n.t("panel.settings.testHintAuth");
+  }
+  if (status === 404) {
+    return i18n.t("panel.settings.testHintNotFound");
+  }
+  if (status === 429) {
+    return i18n.t("panel.settings.testHintRateLimit");
+  }
+  if (status >= 500) {
+    return i18n.t("panel.settings.testHintServer");
+  }
+  return "";
+}
+
 function summarizeSuccessPayload(providerId, payload, i18n) {
   if (payload?.__chatTest) {
     return i18n.t("panel.settings.testChatSuccess");
@@ -203,12 +219,13 @@ export function createProviderConnectionTester({ config, i18n }) {
 
         if (!response.ok) {
           const detail = summarizeErrorPayload(payload);
+          const hint = getHttpStatusHint(response.status, i18n);
           return {
             ok: false,
             code: `http-${response.status}`,
             message: i18n.t("panel.settings.testHttpError", {
               status: response.status,
-              detail: detail || i18n.t("panel.settings.testNoDetail"),
+              detail: [hint, detail || i18n.t("panel.settings.testNoDetail")].filter(Boolean).join(" "),
             }),
           };
         }

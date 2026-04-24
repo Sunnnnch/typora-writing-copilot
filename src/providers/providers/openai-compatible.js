@@ -168,6 +168,22 @@ function extractErrorMessage(payload) {
   return "";
 }
 
+function getHttpStatusHint(status, i18n) {
+  if (status === 401 || status === 403) {
+    return i18n.t("provider.errorHintAuth");
+  }
+  if (status === 404) {
+    return i18n.t("provider.errorHintNotFound");
+  }
+  if (status === 429) {
+    return i18n.t("provider.errorHintRateLimit");
+  }
+  if (status >= 500) {
+    return i18n.t("provider.errorHintServer");
+  }
+  return "";
+}
+
 async function consumeStream(response, onDelta) {
   if (!response.body?.getReader) {
     return "";
@@ -247,9 +263,10 @@ async function requestCompletion({ endpoint, body, headers, onDelta, timeoutMs, 
 
     if (!response.ok) {
       const payload = await readJsonSafely(response);
+      const hint = getHttpStatusHint(response.status, i18n);
       throw new Error(i18n.t("provider.errorHttp", {
         status: response.status,
-        detail: extractErrorMessage(payload) || i18n.t("provider.errorNoDetail"),
+        detail: [hint, extractErrorMessage(payload) || i18n.t("provider.errorNoDetail")].filter(Boolean).join(" "),
       }));
     }
 

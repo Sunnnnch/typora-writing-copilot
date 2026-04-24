@@ -50,6 +50,11 @@ function getProviderLabel(providerId, i18n) {
   return label === key ? providerId : label;
 }
 
+function getProviderModelPresets(config, providerId) {
+  const presets = config?.providers?.modelPresets?.[providerId];
+  return Array.isArray(presets) ? presets : [];
+}
+
 function getQuickActionLabel(action, i18n) {
   const key = `quickAction.${action}`;
   const label = i18n.t(key);
@@ -202,6 +207,7 @@ export function createPanelController({ config, shell, session, resultActions, p
     settingsSearchDraft: null,
     lastRequestMeta: null,
     lastAppliedChange: null,
+    pendingReplaceResult: null,
     pendingDeleteConversationId: null,
   };
 
@@ -237,22 +243,46 @@ export function createPanelController({ config, shell, session, resultActions, p
     );
   }
 
+  function hasSources() {
+    return Array.isArray(state.lastResult?.sources) && state.lastResult.sources.length > 0;
+  }
+
   function syncResultActions() {
     if (!elements) return;
-    const visible = hasLastResult() || canUndoLastApply() || canRegenerate() || canRetry();
+    const visible = hasLastResult() || hasSources() || canUndoLastApply() || canRegenerate() || canRetry();
     elements.actions.style.display = visible ? "flex" : "none";
     elements.replace.style.display = hasLastResult() ? "" : "none";
     elements.insert.style.display = hasLastResult() ? "" : "none";
     elements.copy.style.display = hasLastResult() ? "" : "none";
+    elements.copySources.style.display = hasSources() ? "" : "none";
     elements.undo.style.display = canUndoLastApply() ? "" : "none";
     elements.regenerate.style.display = canRegenerate() ? "" : "none";
     elements.retry.style.display = canRetry() ? "" : "none";
     elements.replace.disabled = !state.lastResult?.selectionCapture;
     elements.insert.disabled = !hasLastResult();
     elements.copy.disabled = !hasLastResult();
+    elements.copySources.disabled = !hasSources();
     elements.undo.disabled = !canUndoLastApply();
     elements.regenerate.disabled = !canRegenerate();
     elements.retry.disabled = !canRetry();
+    if (!state.pendingReplaceResult || !state.lastResult?.selectionCapture) {
+      state.pendingReplaceResult = null;
+    }
+    renderReplacePreview();
+  }
+
+  function renderReplacePreview() {
+    if (!elements?.replacePreview) return;
+
+    const result = state.pendingReplaceResult;
+    if (!result?.selectionCapture) {
+      elements.replacePreview.hidden = true;
+      return;
+    }
+
+    elements.replacePreview.hidden = false;
+    elements.replacePreviewOriginal.innerHTML = formatMessage(result.selectionCapture.text || "");
+    elements.replacePreviewNext.innerHTML = formatMessage(result.text || "");
   }
 
   function updatePanelPlacement() {
@@ -604,6 +634,34 @@ export function createPanelController({ config, shell, session, resultActions, p
     return true;
   }
 
+  async function applyReplaceResult(result) {
+    if (!result) return false;
+    const replaced = await resultActions.apply("replace-selection", result);
+    if (!replaced?.ok) return false;
+
+    rememberAppliedChange(result.selectionCapture?.text || "", replaced.capture);
+    if (state.lastRequestMeta) {
+      state.lastRequestMeta.selectionCapture = cloneSelectionCapture(replaced.capture);
+      state.lastRequestMeta.status = "success";
+    }
+    if (state.lastResult) {
+      state.lastResult.selectionCapture = cloneSelectionCapture(replaced.capture);
+    }
+    state.pendingReplaceResult = null;
+    syncResultActions();
+    setStatus(i18n.t("panel.status.applied"));
+    return true;
+  }
+
+  function formatSourcesForCopy(sources = []) {
+    return sources
+      .map((source, index) => {
+        const title = source.title || source.url || `Source ${index + 1}`;
+        return `${index + 1}. ${title}\n${source.url || ""}`.trim();
+      })
+      .join("\n\n");
+  }
+
   async function streamResponse(text) {
     let current = "";
     state.messages.push({ role: "assistant", text: "" });
@@ -712,6 +770,35 @@ export function createPanelController({ config, shell, session, resultActions, p
     return state.settingsSearchDraft || store.getSearchConfig();
   }
 
+  function renderSettingsProviderBrowser(providerIds, activeProviderId, defaultProviderId) {
+    if (!elements?.settingsProviderBrowser) return;
+
+    elements.settingsProviderBrowser.innerHTML = providerIds.map(providerId => {
+      const label = getProviderLabel(providerId, i18n);
+      const providerConfig = getSettingsProviderConfig(providerId);
+      const classes = [
+        "twc-provider-card",
+        providerId === activeProviderId ? "is-active" : "",
+        providerId === defaultProviderId ? "is-default" : "",
+      ].filter(Boolean).join(" ");
+      const badges = [
+        providerId === defaultProviderId ? i18n.t("panel.settings.defaultBadge") : "",
+        providerConfig.apiKey
+          ? i18n.t("panel.settings.configuredShort")
+          : i18n.t("panel.settings.notConfiguredShort"),
+      ].filter(Boolean);
+
+      return `
+        <button type="button" class="${classes}" data-settings-provider-id="${escapeHtml(providerId)}">
+          <span class="twc-provider-card-name">${escapeHtml(label)}</span>
+          <span class="twc-provider-card-badges">
+            ${badges.map(badge => `<span>${escapeHtml(badge)}</span>`).join("")}
+          </span>
+        </button>
+      `;
+    }).join("");
+  }
+
   function renderSettings() {
     if (!elements) return;
 
@@ -726,13 +813,26 @@ export function createPanelController({ config, shell, session, resultActions, p
 
     setSelectOptions(elements.settingsDefaultProvider, providerIds, providerId => getProviderLabel(providerId, i18n), defaultProviderId);
     setSelectOptions(elements.settingsProvider, providerIds, providerId => getProviderLabel(providerId, i18n), settingsProviderId);
+    renderSettingsProviderBrowser(providerIds, settingsProviderId, defaultProviderId);
 
     elements.settingsBaseUrl.value = providerConfig.baseUrl || "";
     elements.settingsModel.value = providerConfig.model || "";
     elements.settingsApiKey.value = providerConfig.apiKey || "";
+    const modelPresets = getProviderModelPresets(config, settingsProviderId);
+    elements.settingsModel.placeholder = modelPresets[0] || i18n.t("panel.settings.modelPlaceholder");
+    elements.settingsModelPresets.innerHTML = modelPresets
+      .map(model => `<option value="${escapeHtml(model)}"></option>`)
+      .join("");
     const searchConfig = getSettingsSearchConfig();
     elements.settingsSearchBaseUrl.value = searchConfig.baseUrl || "";
     elements.settingsSearchApiKey.value = searchConfig.apiKey || "";
+    elements.settingsActiveProvider.textContent = i18n.t("panel.settings.activeProvider", {
+      provider: getProviderLabel(settingsProviderId, i18n),
+    });
+    elements.settingsSetDefault.disabled = settingsProviderId === defaultProviderId;
+    elements.settingsSetDefault.textContent = settingsProviderId === defaultProviderId
+      ? i18n.t("panel.settings.defaultActive")
+      : i18n.t("panel.settings.setDefault");
     elements.settingsAutoApply.checked = store.getAutoApplySelectionEdits();
     elements.settingsTest.disabled = state.settingsTesting;
     elements.settingsTest.textContent = state.settingsTesting
@@ -742,10 +842,14 @@ export function createPanelController({ config, shell, session, resultActions, p
     const activeStatus = state.settingsTestState?.providerId === settingsProviderId
       ? state.settingsTestState
       : {
-        kind: providerConfig.apiKey ? "success" : "neutral",
-        text: providerConfig.apiKey
-          ? i18n.t("panel.settings.configured")
-          : i18n.t("panel.settings.notConfigured"),
+        kind: providerConfig.apiKey && providerConfig.baseUrl && providerConfig.model ? "success" : "neutral",
+        text: !providerConfig.apiKey
+          ? i18n.t("panel.settings.notConfigured")
+          : !providerConfig.baseUrl
+            ? i18n.t("panel.settings.testMissingBaseUrl")
+            : !providerConfig.model
+              ? i18n.t("panel.settings.testMissingModel")
+              : i18n.t("panel.settings.configured"),
       };
 
     elements.settingsStatus.dataset.state = activeStatus.kind || "neutral";
@@ -904,6 +1008,7 @@ export function createPanelController({ config, shell, session, resultActions, p
         text,
         selectionCapture: cloneSelectionCapture(result.selectionCapture || capture),
       };
+      state.pendingReplaceResult = null;
       if (state.lastRequestMeta) {
         state.lastRequestMeta.status = "success";
       }
@@ -1040,9 +1145,15 @@ export function createPanelController({ config, shell, session, resultActions, p
     elements.replace.textContent = i18n.t("panel.action.replace");
     elements.insert.textContent = i18n.t("panel.action.insert");
     elements.copy.textContent = i18n.t("panel.action.copy");
+    elements.copySources.textContent = i18n.t("panel.action.copySources");
     elements.undo.textContent = i18n.t("panel.action.undo");
     elements.regenerate.textContent = i18n.t("panel.action.regenerate");
     elements.retry.textContent = i18n.t("panel.action.retry");
+    elements.replacePreviewTitle.textContent = i18n.t("panel.replacePreview.title");
+    elements.replacePreviewOriginalLabel.textContent = i18n.t("panel.replacePreview.original");
+    elements.replacePreviewNextLabel.textContent = i18n.t("panel.replacePreview.next");
+    elements.replacePreviewCancel.textContent = i18n.t("panel.replacePreview.cancel");
+    elements.replacePreviewConfirm.textContent = i18n.t("panel.replacePreview.confirm");
 
     setSelectOptions(elements.provider, providers.list(), providerId => getProviderLabel(providerId, i18n), state.providerId);
     setSelectOptions(elements.mode, MODE_OPTIONS, mode => getModeLabel(mode, i18n), state.mode);
@@ -1166,7 +1277,12 @@ export function createPanelController({ config, shell, session, resultActions, p
           <button type="button" class="twc-button" data-role="settings-close"></button>
         </div>
         <div class="twc-sheet-copy" data-role="settings-copy"></div>
-        <div class="twc-settings-grid">
+        <div class="twc-provider-browser" data-role="settings-provider-browser"></div>
+        <div class="twc-provider-summary">
+          <span data-role="settings-active-provider"></span>
+          <button type="button" class="twc-button" data-role="settings-set-default"></button>
+        </div>
+        <div class="twc-settings-hidden-selects">
           <label class="twc-field">
             <span class="twc-field-label" data-role="settings-default-provider-label"></span>
             <select class="twc-select" data-role="settings-default-provider"></select>
@@ -1175,13 +1291,16 @@ export function createPanelController({ config, shell, session, resultActions, p
             <span class="twc-field-label" data-role="settings-provider-label"></span>
             <select class="twc-select" data-role="settings-provider"></select>
           </label>
+        </div>
+        <div class="twc-settings-grid">
           <label class="twc-field twc-field-span">
             <span class="twc-field-label" data-role="settings-base-url-label"></span>
             <input type="text" class="twc-input" data-role="settings-base-url">
           </label>
           <label class="twc-field">
             <span class="twc-field-label" data-role="settings-model-label"></span>
-            <input type="text" class="twc-input" data-role="settings-model">
+            <input type="text" class="twc-input" data-role="settings-model" list="twc-model-presets">
+            <datalist id="twc-model-presets" data-role="settings-model-presets"></datalist>
           </label>
           <label class="twc-field">
             <span class="twc-field-label" data-role="settings-api-key-label"></span>
@@ -1237,10 +1356,30 @@ export function createPanelController({ config, shell, session, resultActions, p
           <button type="button" class="twc-button is-primary" data-role="send"></button>
         </div>
       </div>
+      <div class="twc-replace-preview" data-role="replace-preview" hidden>
+        <div class="twc-replace-preview-head">
+          <strong data-role="replace-preview-title"></strong>
+          <button type="button" class="twc-button" data-role="replace-preview-cancel"></button>
+        </div>
+        <div class="twc-replace-preview-grid">
+          <div>
+            <div class="twc-field-label" data-role="replace-preview-original-label"></div>
+            <div class="twc-replace-preview-box" data-role="replace-preview-original"></div>
+          </div>
+          <div>
+            <div class="twc-field-label" data-role="replace-preview-next-label"></div>
+            <div class="twc-replace-preview-box" data-role="replace-preview-next"></div>
+          </div>
+        </div>
+        <div class="twc-sheet-actions">
+          <button type="button" class="twc-button is-primary" data-role="replace-preview-confirm"></button>
+        </div>
+      </div>
       <div class="twc-actions" data-role="actions" style="display:none">
         <button type="button" class="twc-button" data-role="replace"></button>
         <button type="button" class="twc-button" data-role="insert"></button>
         <button type="button" class="twc-button" data-role="copy"></button>
+        <button type="button" class="twc-button" data-role="copy-sources"></button>
         <button type="button" class="twc-button" data-role="undo"></button>
         <button type="button" class="twc-button" data-role="regenerate"></button>
         <button type="button" class="twc-button" data-role="retry"></button>
@@ -1266,6 +1405,9 @@ export function createPanelController({ config, shell, session, resultActions, p
       settingsTitle: root.querySelector('[data-role="settings-title"]'),
       settingsCopy: root.querySelector('[data-role="settings-copy"]'),
       settingsClose: root.querySelector('[data-role="settings-close"]'),
+      settingsProviderBrowser: root.querySelector('[data-role="settings-provider-browser"]'),
+      settingsActiveProvider: root.querySelector('[data-role="settings-active-provider"]'),
+      settingsSetDefault: root.querySelector('[data-role="settings-set-default"]'),
       settingsDefaultProviderLabel: root.querySelector('[data-role="settings-default-provider-label"]'),
       settingsProviderLabel: root.querySelector('[data-role="settings-provider-label"]'),
       settingsBaseUrlLabel: root.querySelector('[data-role="settings-base-url-label"]'),
@@ -1279,6 +1421,7 @@ export function createPanelController({ config, shell, session, resultActions, p
       settingsProvider: root.querySelector('[data-role="settings-provider"]'),
       settingsBaseUrl: root.querySelector('[data-role="settings-base-url"]'),
       settingsModel: root.querySelector('[data-role="settings-model"]'),
+      settingsModelPresets: root.querySelector('[data-role="settings-model-presets"]'),
       settingsApiKey: root.querySelector('[data-role="settings-api-key"]'),
       settingsSearchBaseUrl: root.querySelector('[data-role="settings-search-base-url"]'),
       settingsSearchApiKey: root.querySelector('[data-role="settings-search-api-key"]'),
@@ -1301,10 +1444,19 @@ export function createPanelController({ config, shell, session, resultActions, p
       input: root.querySelector('[data-role="input"]'),
       stop: root.querySelector('[data-role="stop"]'),
       send: root.querySelector('[data-role="send"]'),
+      replacePreview: root.querySelector('[data-role="replace-preview"]'),
+      replacePreviewTitle: root.querySelector('[data-role="replace-preview-title"]'),
+      replacePreviewCancel: root.querySelector('[data-role="replace-preview-cancel"]'),
+      replacePreviewOriginalLabel: root.querySelector('[data-role="replace-preview-original-label"]'),
+      replacePreviewOriginal: root.querySelector('[data-role="replace-preview-original"]'),
+      replacePreviewNextLabel: root.querySelector('[data-role="replace-preview-next-label"]'),
+      replacePreviewNext: root.querySelector('[data-role="replace-preview-next"]'),
+      replacePreviewConfirm: root.querySelector('[data-role="replace-preview-confirm"]'),
       actions: root.querySelector('[data-role="actions"]'),
       replace: root.querySelector('[data-role="replace"]'),
       insert: root.querySelector('[data-role="insert"]'),
       copy: root.querySelector('[data-role="copy"]'),
+      copySources: root.querySelector('[data-role="copy-sources"]'),
       undo: root.querySelector('[data-role="undo"]'),
       regenerate: root.querySelector('[data-role="regenerate"]'),
       retry: root.querySelector('[data-role="retry"]'),
@@ -1455,6 +1607,23 @@ export function createPanelController({ config, shell, session, resultActions, p
     elements.settingsProvider.addEventListener("change", () => {
       rememberCurrentProviderDraft();
       state.settingsProviderId = elements.settingsProvider.value;
+      state.settingsTestState = null;
+      renderSettings();
+    });
+
+    elements.settingsProviderBrowser.addEventListener("click", event => {
+      const target = event.target.closest("[data-settings-provider-id]");
+      if (!target) return;
+
+      rememberCurrentProviderDraft();
+      state.settingsProviderId = target.dataset.settingsProviderId;
+      state.settingsTestState = null;
+      renderSettings();
+    });
+
+    elements.settingsSetDefault.addEventListener("click", () => {
+      rememberCurrentProviderDraft();
+      state.settingsDefaultProviderDraft = state.settingsProviderId;
       state.settingsTestState = null;
       renderSettings();
     });
@@ -1633,17 +1802,21 @@ export function createPanelController({ config, shell, session, resultActions, p
 
     elements.replace.addEventListener("click", async () => {
       if (!state.lastResult) return;
-      const replaced = await resultActions.apply("replace-selection", state.lastResult);
-      if (!replaced?.ok) return;
-
-      rememberAppliedChange(state.lastResult.selectionCapture?.text || "", replaced.capture);
-      if (state.lastRequestMeta) {
-        state.lastRequestMeta.selectionCapture = cloneSelectionCapture(replaced.capture);
-        state.lastRequestMeta.status = "success";
-      }
-      state.lastResult.selectionCapture = cloneSelectionCapture(replaced.capture);
+      state.pendingReplaceResult = {
+        ...state.lastResult,
+        selectionCapture: cloneSelectionCapture(state.lastResult.selectionCapture),
+      };
       syncResultActions();
-      setStatus(i18n.t("panel.status.applied"));
+      setStatus(i18n.t("panel.replacePreview.ready"));
+    });
+
+    elements.replacePreviewConfirm.addEventListener("click", async () => {
+      await applyReplaceResult(state.pendingReplaceResult);
+    });
+
+    elements.replacePreviewCancel.addEventListener("click", () => {
+      state.pendingReplaceResult = null;
+      syncResultActions();
     });
 
     elements.insert.addEventListener("click", async () => {
@@ -1652,6 +1825,12 @@ export function createPanelController({ config, shell, session, resultActions, p
 
     elements.copy.addEventListener("click", async () => {
       await resultActions.apply("copy", state.lastResult);
+      setStatus(i18n.t("panel.status.copied"));
+    });
+
+    elements.copySources.addEventListener("click", async () => {
+      if (!hasSources()) return;
+      await shell.copyText(formatSourcesForCopy(state.lastResult.sources));
       setStatus(i18n.t("panel.status.copied"));
     });
 

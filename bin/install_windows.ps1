@@ -301,6 +301,24 @@ function Upsert-Injection {
     Set-Content -LiteralPath $WindowHtmlPath -Value $updated -Encoding UTF8 -NoNewline
 }
 
+function Warn-IfTyporaRunning {
+    $running = @(Get-Process -Name "Typora" -ErrorAction SilentlyContinue)
+    if ($running.Count -gt 0) {
+        Write-Host "Typora appears to be running. Restart Typora after installation so the plugin can load." -ForegroundColor Yellow
+    }
+}
+
+function Test-InjectionInstalled {
+    param(
+        [string]$WindowHtmlPath,
+        [string]$EntryScriptPath
+    )
+
+    $content = Get-Content -LiteralPath $WindowHtmlPath -Encoding UTF8 -Raw
+    $entryUri = [System.Uri]::new($EntryScriptPath).AbsoluteUri
+    return ($content -like "*<!-- Typora Writing Copilot -->*") -and ($content -like "*$entryUri*")
+}
+
 $banner = @"
   _______                       __        __      __      ______                 _ __
  /_  __(_)___  ____  _________ / /_____ _/ /_    / /___ _/ / /_  _______  _____(_) /_
@@ -337,6 +355,7 @@ try {
     Write-Host "Typora window  : $windowHtmlPath" -ForegroundColor Cyan
     Write-Host "Plugin home    : $pluginHomeRoot" -ForegroundColor Cyan
     Write-Host "Entry script   : $entryScriptPath" -ForegroundColor Cyan
+    Warn-IfTyporaRunning
 
     if (-not (Test-Path -LiteralPath $backupPath)) {
         Copy-Item -LiteralPath $windowHtmlPath -Destination $backupPath -Force
@@ -350,6 +369,9 @@ try {
     New-Item -ItemType Directory -Path $pluginHomeRoot -Force | Out-Null
     Copy-Item -LiteralPath $sourceSrc -Destination $targetSrc -Recurse -Force
     Upsert-Injection -WindowHtmlPath $windowHtmlPath -EntryScriptPath $entryScriptPath
+    if (-not (Test-InjectionInstalled -WindowHtmlPath $windowHtmlPath -EntryScriptPath $entryScriptPath)) {
+        throw "Installation verification failed: injection marker was not found in window.html."
+    }
     Write-InstallState -WindowHtmlPath $windowHtmlPath -PluginHomeRoot $pluginHomeRoot
 
     Write-Host ""

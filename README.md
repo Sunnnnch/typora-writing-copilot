@@ -20,9 +20,10 @@ It is a writing-focused copilot built around:
 - selection floating toolbar
 - Chinese / English runtime switching
 - conversation history bound to the current document
-- provider settings and connection testing
-- auto-apply rewrite actions with undo
+- provider cards, model suggestions, and connection testing
+- replacement preview, optional auto-apply rewrite actions, and undo
 - regenerate / retry actions
+- copyable search sources
 - Typora shell adapter
 - Windows installer, uninstaller, and GUI installer
 
@@ -32,7 +33,7 @@ It is a writing-focused copilot built around:
 - `Gemini` uses the live Google Generative Language API transport
 - web search uses the live Tavily Search API adapter
 
-The settings panel includes provider credentials, model IDs, connection testing, and Tavily search credentials.
+The settings panel includes provider credentials, common model suggestions, connection testing, and Tavily search credentials.
 If a model is configured, the test button sends a lightweight generation request instead of only listing models.
 
 ## Project Structure
@@ -99,6 +100,7 @@ npm run check
 ## Notes
 
 - Provider configuration is currently stored in local browser storage, not the system credential store.
+- System credential storage still requires a native helper; the Typora page cannot safely read Windows Credential Manager directly.
 - Tavily search requires its own API key in Settings.
 - This repository is intended to be used as an independent project, not as a subdirectory of another plugin platform.
 - Before publishing, review your local runtime storage separately; API keys are not meant to live in tracked files.
