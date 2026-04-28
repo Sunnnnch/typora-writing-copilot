@@ -562,6 +562,112 @@ export function ensureWritingCopilotStyles() {
       border: 1px solid rgba(111, 84, 56, 0.08);
     }
 
+    .twc-bubble > :first-child {
+      margin-top: 0;
+    }
+
+    .twc-bubble > :last-child {
+      margin-bottom: 0;
+    }
+
+    .twc-bubble p {
+      margin: 0.35em 0;
+    }
+
+    .twc-bubble h1,
+    .twc-bubble h2,
+    .twc-bubble h3,
+    .twc-bubble h4,
+    .twc-bubble h5,
+    .twc-bubble h6 {
+      margin: 0.7em 0 0.35em;
+      color: var(--twc-text);
+      font-weight: 750;
+      line-height: 1.25;
+    }
+
+    .twc-bubble h1 { font-size: 18px; }
+    .twc-bubble h2 { font-size: 16px; }
+    .twc-bubble h3 { font-size: 14px; }
+    .twc-bubble h4,
+    .twc-bubble h5,
+    .twc-bubble h6 { font-size: 13px; }
+
+    .twc-bubble ul,
+    .twc-bubble ol {
+      margin: 0.35em 0;
+      padding-left: 1.35em;
+    }
+
+    .twc-bubble li {
+      margin: 0.18em 0;
+    }
+
+    .twc-bubble blockquote {
+      margin: 0.55em 0;
+      padding: 0.4em 0.8em;
+      border-left: 3px solid var(--twc-border-strong);
+      background: rgba(255, 255, 255, 0.36);
+      color: var(--twc-muted);
+    }
+
+    .twc-bubble pre {
+      max-width: 100%;
+      overflow: auto;
+      margin: 0.6em 0;
+      padding: 10px 12px;
+      border: 1px solid var(--twc-border);
+      border-radius: 12px;
+      background: rgba(47, 36, 24, 0.06);
+      white-space: pre;
+    }
+
+    .twc-bubble code {
+      padding: 0.12em 0.32em;
+      border-radius: 6px;
+      background: rgba(47, 36, 24, 0.08);
+      font-family: "JetBrains Mono", "Cascadia Code", "SFMono-Regular", monospace;
+      font-size: 0.92em;
+    }
+
+    .twc-bubble pre code {
+      padding: 0;
+      background: transparent;
+      border-radius: 0;
+      font-size: 12px;
+    }
+
+    .twc-bubble a {
+      color: #7e4a22;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    .twc-bubble table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 0.6em 0;
+      font-size: 12px;
+    }
+
+    .twc-bubble th,
+    .twc-bubble td {
+      padding: 6px 8px;
+      border: 1px solid var(--twc-border);
+      vertical-align: top;
+    }
+
+    .twc-bubble th {
+      background: rgba(155, 93, 46, 0.08);
+      font-weight: 700;
+    }
+
+    .twc-bubble hr {
+      border: 0;
+      border-top: 1px solid var(--twc-border);
+      margin: 0.8em 0;
+    }
+
     .twc-message.is-user .twc-bubble {
       background: var(--twc-user);
     }

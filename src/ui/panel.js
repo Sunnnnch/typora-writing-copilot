@@ -48,10 +48,192 @@ function escapeHtml(text) {
     .replace(/'/g, "&#39;");
 }
 
+function renderInlineMarkdown(text) {
+  const codeTokens = [];
+  let escaped = escapeHtml(text);
+
+  escaped = escaped.replace(/`([^`]+)`/g, (_, code) => {
+    const token = `\u0000CODE${codeTokens.length}\u0000`;
+    codeTokens.push(`<code>${code}</code>`);
+    return token;
+  });
+
+  escaped = escaped
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/__([^_]+)__/g, "<strong>$1</strong>")
+    .replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>")
+    .replace(/(^|[\s(])_([^_\n]+)_/g, "$1<em>$2</em>");
+
+  codeTokens.forEach((html, index) => {
+    escaped = escaped.replace(`\u0000CODE${index}\u0000`, html);
+  });
+
+  return escaped;
+}
+
+function isTableSeparator(line) {
+  return /^\s*\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$/.test(line);
+}
+
+function parseTableCells(line) {
+  return line
+    .trim()
+    .replace(/^\|/, "")
+    .replace(/\|$/, "")
+    .split("|")
+    .map(cell => cell.trim());
+}
+
+function renderTable(tableLines) {
+  const [headerLine, , ...bodyLines] = tableLines;
+  const headers = parseTableCells(headerLine);
+  const rows = bodyLines.map(parseTableCells);
+  return `
+    <table>
+      <thead><tr>${headers.map(cell => `<th>${renderInlineMarkdown(cell)}</th>`).join("")}</tr></thead>
+      <tbody>
+        ${rows.map(row => `<tr>${headers.map((_, index) => `<td>${renderInlineMarkdown(row[index] || "")}</td>`).join("")}</tr>`).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderMarkdown(text) {
+  const lines = String(text || "").replace(/\r\n/g, "\n").split("\n");
+  const html = [];
+  let paragraph = [];
+  let listType = null;
+  let listItems = [];
+  let quoteLines = [];
+  let inCodeBlock = false;
+  let codeLanguage = "";
+  let codeLines = [];
+
+  function flushParagraph() {
+    if (!paragraph.length) return;
+    html.push(`<p>${paragraph.map(renderInlineMarkdown).join("<br>")}</p>`);
+    paragraph = [];
+  }
+
+  function flushList() {
+    if (!listItems.length || !listType) return;
+    html.push(`<${listType}>${listItems.join("")}</${listType}>`);
+    listType = null;
+    listItems = [];
+  }
+
+  function flushQuote() {
+    if (!quoteLines.length) return;
+    html.push(`<blockquote>${quoteLines.map(renderInlineMarkdown).join("<br>")}</blockquote>`);
+    quoteLines = [];
+  }
+
+  function flushCodeBlock() {
+    const languageClass = codeLanguage ? ` class="language-${escapeHtml(codeLanguage)}"` : "";
+    html.push(`<pre><code${languageClass}>${escapeHtml(codeLines.join("\n"))}</code></pre>`);
+    inCodeBlock = false;
+    codeLanguage = "";
+    codeLines = [];
+  }
+
+  function flushOpenBlocks() {
+    flushParagraph();
+    flushList();
+    flushQuote();
+  }
+
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index];
+    const trimmed = line.trim();
+    const fence = trimmed.match(/^```([A-Za-z0-9_-]+)?\s*$/);
+
+    if (fence) {
+      if (inCodeBlock) {
+        flushCodeBlock();
+      } else {
+        flushOpenBlocks();
+        inCodeBlock = true;
+        codeLanguage = fence[1] || "";
+        codeLines = [];
+      }
+      continue;
+    }
+
+    if (inCodeBlock) {
+      codeLines.push(line);
+      continue;
+    }
+
+    if (!trimmed) {
+      flushOpenBlocks();
+      continue;
+    }
+
+    if (line.includes("|") && lines[index + 1] && isTableSeparator(lines[index + 1])) {
+      flushOpenBlocks();
+      const tableLines = [line, lines[index + 1]];
+      index += 2;
+      while (index < lines.length && lines[index].includes("|") && lines[index].trim()) {
+        tableLines.push(lines[index]);
+        index += 1;
+      }
+      index -= 1;
+      html.push(renderTable(tableLines));
+      continue;
+    }
+
+    const heading = line.match(/^(#{1,6})\s+(.+)$/);
+    if (heading) {
+      flushOpenBlocks();
+      const level = heading[1].length;
+      html.push(`<h${level}>${renderInlineMarkdown(heading[2].trim())}</h${level}>`);
+      continue;
+    }
+
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) {
+      flushOpenBlocks();
+      html.push("<hr>");
+      continue;
+    }
+
+    const quote = line.match(/^>\s?(.*)$/);
+    if (quote) {
+      flushParagraph();
+      flushList();
+      quoteLines.push(quote[1]);
+      continue;
+    }
+
+    const unordered = line.match(/^\s*[-*+]\s+(.+)$/);
+    const ordered = line.match(/^\s*\d+\.\s+(.+)$/);
+    if (unordered || ordered) {
+      flushParagraph();
+      flushQuote();
+      const nextType = ordered ? "ol" : "ul";
+      if (listType && listType !== nextType) {
+        flushList();
+      }
+      listType = nextType;
+      listItems.push(`<li>${renderInlineMarkdown((ordered || unordered)[1])}</li>`);
+      continue;
+    }
+
+    flushList();
+    flushQuote();
+    paragraph.push(line);
+  }
+
+  if (inCodeBlock) {
+    flushCodeBlock();
+  }
+  flushOpenBlocks();
+
+  return html.join("");
+}
+
 function formatMessage(text) {
-  const escaped = escapeHtml(text);
-  const linked = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>');
-  return linked.replace(/\r?\n/g, "<br>");
+  return renderMarkdown(text);
 }
 
 function normalizeScope(scope) {
@@ -1210,11 +1392,9 @@ export function createPanelController({ config, shell, session, resultActions, p
     if (!workflow) return null;
 
     const explicitPrompt = String(options.promptOverride || "").trim();
-    const pointerContext = options.context || (
-      pendingWorkflowContext?.workflowId === workflowId ? pendingWorkflowContext : null
-    );
+    const pointerContext = options.context || null;
     const liveCapture = shell.captureSelection();
-    const fallbackCapture = pointerContext ? pointerContext.selectionCapture : state.selectionCapture;
+    const fallbackCapture = pointerContext?.selectionCapture || null;
     const capture = cloneSelectionCapture(
       liveCapture?.text ? liveCapture : fallbackCapture,
     );
@@ -1921,7 +2101,10 @@ export function createPanelController({ config, shell, session, resultActions, p
 
     elements.workflows.addEventListener("pointerdown", event => {
       const target = event.target.closest("[data-workflow-id]");
-      if (!target) return;
+      if (!target) {
+        pendingWorkflowContext = null;
+        return;
+      }
 
       const selectionCapture = shell.captureSelection();
       pendingWorkflowContext = {
@@ -1933,14 +2116,14 @@ export function createPanelController({ config, shell, session, resultActions, p
 
     elements.workflows.addEventListener("click", async event => {
       const target = event.target.closest("[data-workflow-id]");
+      const context = target && pendingWorkflowContext?.workflowId === target.dataset.workflowId
+        ? pendingWorkflowContext
+        : null;
+      pendingWorkflowContext = null;
       if (!target || busy) return;
       event.preventDefault();
       event.stopPropagation();
-      const context = pendingWorkflowContext?.workflowId === target.dataset.workflowId
-        ? pendingWorkflowContext
-        : null;
       await runWorkflow(target.dataset.workflowId, { context });
-      pendingWorkflowContext = null;
     });
 
     elements.send.addEventListener("click", async () => {
