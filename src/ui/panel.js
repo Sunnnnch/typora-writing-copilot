@@ -50,6 +50,7 @@ function escapeHtml(text) {
 
 function renderInlineMarkdown(text) {
   const codeTokens = [];
+  const linkTokens = [];
   let escaped = escapeHtml(text);
 
   escaped = escaped.replace(/`([^`]+)`/g, (_, code) => {
@@ -58,12 +59,21 @@ function renderInlineMarkdown(text) {
     return token;
   });
 
+  escaped = escaped.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (_, label, url) => {
+    const token = `\u0000LINK${linkTokens.length}\u0000`;
+    linkTokens.push(`<a href="${url}" target="_blank" rel="noopener noreferrer">${label}</a>`);
+    return token;
+  });
+
   escaped = escaped
-    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noreferrer">$1</a>')
     .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
     .replace(/__([^_]+)__/g, "<strong>$1</strong>")
     .replace(/(^|[\s(])\*([^*\n]+)\*/g, "$1<em>$2</em>")
     .replace(/(^|[\s(])_([^_\n]+)_/g, "$1<em>$2</em>");
+
+  linkTokens.forEach((html, index) => {
+    escaped = escaped.replace(`\u0000LINK${index}\u0000`, html);
+  });
 
   codeTokens.forEach((html, index) => {
     escaped = escaped.replace(`\u0000CODE${index}\u0000`, html);
