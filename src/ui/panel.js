@@ -246,6 +246,22 @@ function formatMessage(text) {
   return renderMarkdown(text);
 }
 
+function getLauncherIcon(label) {
+  return `
+    <span class="twc-launcher-visual" aria-hidden="true">
+      <svg class="twc-launcher-icon" viewBox="0 0 48 48" focusable="false">
+        <path class="twc-launcher-spark" d="M37 7l1.8 4.1L43 13l-4.2 1.9L37 19l-1.8-4.1L31 13l4.2-1.9L37 7z"></path>
+        <path class="twc-launcher-face" d="M13.5 23.1 16.1 11l8 6.1 7.8-6.1 2.6 12.1c1.5 1.8 2.3 4 2.3 6.5 0 7-5.4 11.9-12.8 11.9s-12.8-4.9-12.8-11.9c0-2.5.8-4.7 2.3-6.5z"></path>
+        <circle class="twc-launcher-eye" cx="20" cy="28.4" r="1.7"></circle>
+        <circle class="twc-launcher-eye" cx="28" cy="28.4" r="1.7"></circle>
+        <path class="twc-launcher-smile" d="M21.7 33.1c1.3 1.4 3.3 1.4 4.6 0"></path>
+        <path class="twc-launcher-pen" d="M31.5 36.6 39 29.1l2.2 2.2-7.5 7.5-3.4 1.2 1.2-3.4z"></path>
+      </svg>
+    </span>
+    <span class="twc-sr-only">${escapeHtml(label)}</span>
+  `;
+}
+
 function normalizeScope(scope) {
   return scope === "document"
     ? "document"
@@ -1443,7 +1459,10 @@ export function createPanelController({ config, shell, session, resultActions, p
   function syncTranslations() {
     if (!elements) return;
 
-    launcher.textContent = i18n.t("app.launcher");
+    const launcherLabel = i18n.t("app.launcher");
+    launcher.innerHTML = getLauncherIcon(launcherLabel);
+    launcher.title = launcherLabel;
+    launcher.setAttribute("aria-label", launcherLabel);
     elements.kicker.textContent = i18n.t("app.kicker");
     elements.name.textContent = i18n.t("app.productName");
     elements.toggleHistory.textContent = i18n.t("panel.header.historyShort");

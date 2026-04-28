@@ -28,17 +28,76 @@ export function ensureWritingCopilotStyles() {
       right: 18px;
       top: 96px;
       z-index: 99991;
+      display: inline-grid;
+      place-items: center;
+      width: 48px;
+      height: 48px;
       border: 1px solid var(--twc-border-strong);
-      border-radius: 999px;
-      background: var(--twc-panel-strong);
+      border-radius: 18px;
+      background:
+        radial-gradient(circle at 30% 18%, rgba(255, 255, 255, 0.92) 0 18%, transparent 19%),
+        linear-gradient(145deg, #fff8e8 0%, #f2dfc4 100%);
       color: var(--twc-text);
       box-shadow: var(--twc-shadow);
-      padding: 10px 14px;
+      padding: 0;
       font: 600 13px/1 var(--twc-font);
       letter-spacing: 0.04em;
       cursor: pointer;
       touch-action: none;
       user-select: none;
+    }
+
+    .twc-launcher-visual {
+      display: grid;
+      place-items: center;
+      width: 38px;
+      height: 38px;
+      border-radius: 14px;
+      background: rgba(255, 253, 247, 0.72);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+
+    .twc-launcher-icon {
+      width: 34px;
+      height: 34px;
+      overflow: visible;
+    }
+
+    .twc-launcher-face {
+      fill: #fff9ec;
+      stroke: #9b5d2e;
+      stroke-width: 2;
+      stroke-linejoin: round;
+    }
+
+    .twc-launcher-eye {
+      fill: #2f2418;
+    }
+
+    .twc-launcher-smile,
+    .twc-launcher-pen {
+      fill: none;
+      stroke: #9b5d2e;
+      stroke-width: 2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .twc-launcher-spark {
+      fill: #d89b3d;
+      opacity: 0.92;
+    }
+
+    .twc-sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
     }
 
     .twc-launcher.is-dragging {
