@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
+  <title id="title">Typrism icon</title>
+  <desc id="desc">A soft prism-shaped writing assistant mascot with a pen.</desc>
+  <defs>
+    <linearGradient id="paper" x1="18" y1="12" x2="104" y2="116" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fffaf0"/>
+      <stop offset="1" stop-color="#efe2cf"/>
+    </linearGradient>
+    <linearGradient id="prism" x1="30" y1="22" x2="96" y2="104" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#fff7df"/>
+      <stop offset=".52" stop-color="#e8f0db"/>
+      <stop offset="1" stop-color="#d6e2ed"/>
+    </linearGradient>
+    <linearGradient id="pen" x1="78" y1="82" x2="111" y2="115" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#c9864a"/>
+      <stop offset="1" stop-color="#8b5932"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="150%" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="8" stdDeviation="9" flood-color="#5e4326" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <rect width="128" height="128" rx="32" fill="#fbf6eb"/>
+  <circle cx="103" cy="24" r="5" fill="#c9864a"/>
+  <path d="M24 26h34c26 0 47 21 47 47v29H71c-26 0-47-21-47-47V26z" fill="url(#paper)" filter="url(#shadow)"/>
+  <path d="M37 39 65 20l28 19v38L65 102 37 77V39z" fill="url(#prism)" stroke="#7b6547" stroke-width="3" stroke-linejoin="round"/>
+  <path d="M65 20v82M37 39l28 19 28-19M37 77l28-19 28 19" fill="none" stroke="#7b6547" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" opacity=".54"/>
+  <circle cx="55" cy="61" r="4" fill="#3e3326"/>
+  <circle cx="75" cy="61" r="4" fill="#3e3326"/>
+  <path d="M56 73c5 5 13 5 18 0" fill="none" stroke="#3e3326" stroke-width="4" stroke-linecap="round"/>
+  <path d="M84 88 104 68l10 10-20 20-15 5 5-15z" fill="url(#pen)" stroke="#6d4429" stroke-width="3" stroke-linejoin="round"/>
+  <path d="m104 68 10 10" stroke="#fff4df" stroke-width="3" stroke-linecap="round"/>
+  <path d="M22 84c7 4 14 5 21 2" fill="none" stroke="#c9864a" stroke-width="4" stroke-linecap="round"/>
+</svg>

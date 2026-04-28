@@ -8,11 +8,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-$Host.UI.RawUI.WindowTitle = "Typora Writing Copilot Uninstaller"
+$Host.UI.RawUI.WindowTitle = "Typrism Uninstaller"
 
 $script:TranscriptStarted = $false
 $script:HadError = $false
-$script:DefaultPluginHomeName = "TyporaWritingCopilot"
+$script:DefaultPluginHomeName = "Typrism"
 $script:InstallerStateHomeName = "TyporaWritingCopilotInstaller"
 $script:ScriptPath = $PSCommandPath
 $script:ScriptDir = Split-Path -Parent $script:ScriptPath
@@ -286,7 +286,7 @@ function Remove-Injection {
         [string]$WindowHtmlPath
     )
 
-    $markerPattern = '(?s)\s*<!-- Typora Writing Copilot -->.*?<!-- /Typora Writing Copilot -->\s*'
+    $markerPattern = '(?s)\s*<!-- (Typrism|Typilot|Typora Writing Copilot) -->.*?<!-- /(Typrism|Typilot|Typora Writing Copilot) -->\s*'
     $content = Get-Content -LiteralPath $WindowHtmlPath -Encoding UTF8 -Raw
     $updated = [System.Text.RegularExpressions.Regex]::Replace(
         $content,
@@ -311,12 +311,7 @@ function Restore-WindowBackup {
 }
 
 $banner = @"
-  _______                       __        __      __      __  ___      _           __        ____
- /_  __(_)___  ____  _________ / /_____ _/ /_    / /___ _/ /_/ (_)____(_)___  ____/ /__     / __ \
-  / / / / __ \/ __ \/ ___/ __ `/ __/ __ `/ __ \  / / __ `/ __/ / / ___/ / __ \/ __  / _ \   / /_/ /
- / / / / /_/ / /_/ / /  / /_/ / /_/ /_/ / /_/ / / / /_/ / /_/ / / /__/ / /_/ / /_/ /  __/  / _, _/
-/_/ /_/ .___/\____/_/   \__,_/\__/\__,_/_.___/_/ /\__,_/\__/_/_/\___/_/\____/\__,_/\___/  /_/ |_|
-     /_/                                    /___/
+Typrism
 "@
 
 try {
@@ -347,7 +342,7 @@ try {
     Remove-InstallState
 
     Write-Host ""
-    Write-Host "Typora Writing Copilot uninstalled successfully." -ForegroundColor Green
+    Write-Host "Typrism uninstalled successfully." -ForegroundColor Green
     Write-Host "Restart Typora to apply the removal." -ForegroundColor Green
 } catch {
     $script:HadError = $true

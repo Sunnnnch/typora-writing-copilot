@@ -7,11 +7,11 @@ param(
 
 Set-StrictMode -Version Latest
 $ErrorActionPreference = "Stop"
-$Host.UI.RawUI.WindowTitle = "Typora Writing Copilot Installer"
+$Host.UI.RawUI.WindowTitle = "Typrism Installer"
 
 $script:TranscriptStarted = $false
 $script:HadError = $false
-$script:DefaultPluginHomeName = "TyporaWritingCopilot"
+$script:DefaultPluginHomeName = "Typrism"
 $script:InstallerStateHomeName = "TyporaWritingCopilotInstaller"
 $script:ScriptPath = $PSCommandPath
 $script:ScriptDir = Split-Path -Parent $script:ScriptPath
@@ -273,12 +273,12 @@ function Upsert-Injection {
         [string]$EntryScriptPath
     )
 
-    $markerStart = "<!-- Typora Writing Copilot -->"
-    $markerEnd = "<!-- /Typora Writing Copilot -->"
+    $markerStart = "<!-- Typrism -->"
+    $markerEnd = "<!-- /Typrism -->"
     $entryUri = [System.Uri]::new($EntryScriptPath).AbsoluteUri
     $scriptTag = "<script type=`"module`" src=`"$entryUri`"></script>"
     $injectionBlock = "$markerStart`r`n$scriptTag`r`n$markerEnd"
-    $markerPattern = '(?s)<!-- Typora Writing Copilot -->.*?<!-- /Typora Writing Copilot -->'
+    $markerPattern = '(?s)<!-- (Typrism|Typilot|Typora Writing Copilot) -->.*?<!-- /(Typrism|Typilot|Typora Writing Copilot) -->'
 
     $content = Get-Content -LiteralPath $WindowHtmlPath -Encoding UTF8 -Raw
     if ($content -match $markerPattern) {
@@ -316,16 +316,11 @@ function Test-InjectionInstalled {
 
     $content = Get-Content -LiteralPath $WindowHtmlPath -Encoding UTF8 -Raw
     $entryUri = [System.Uri]::new($EntryScriptPath).AbsoluteUri
-    return ($content -like "*<!-- Typora Writing Copilot -->*") -and ($content -like "*$entryUri*")
+    return (($content -like "*<!-- Typrism -->*") -or ($content -like "*<!-- Typilot -->*") -or ($content -like "*<!-- Typora Writing Copilot -->*")) -and ($content -like "*$entryUri*")
 }
 
 $banner = @"
-  _______                       __        __      __      ______                 _ __
- /_  __(_)___  ____  _________ / /_____ _/ /_    / /___ _/ / /_  _______  _____(_) /_
-  / / / / __ \/ __ \/ ___/ __ `/ __/ __ `/ __ \  / / __ `/ / __ \/ ___/ / / / __/ __/
- / / / / /_/ / /_/ / /  / /_/ / /_/ /_/ / /_/ / / / /_/ / / /_/ / /  / /_/ / /_/ /_
-/_/ /_/ .___/\____/_/   \__,_/\__/\__,_/_.___/_/ /\__,_/_/_.___/_/   \__,_/\__/\__/
-     /_/                                    /___/
+Typrism
 "@
 
 try {
@@ -375,7 +370,7 @@ try {
     Write-InstallState -WindowHtmlPath $windowHtmlPath -PluginHomeRoot $pluginHomeRoot
 
     Write-Host ""
-    Write-Host "Typora Writing Copilot installed successfully." -ForegroundColor Green
+    Write-Host "Typrism installed successfully." -ForegroundColor Green
     Write-Host "Restart Typora to load the plugin." -ForegroundColor Green
 } catch {
     $script:HadError = $true

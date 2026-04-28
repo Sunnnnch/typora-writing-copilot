@@ -1,8 +1,8 @@
 {
-  "name": "typora-writing-copilot",
+  "name": "typrism",
   "version": "0.1.0",
   "private": true,
-  "description": "Standalone AI writing copilot for Typora.",
+  "description": "Typrism: standalone AI writing assistant for Typora.",
   "type": "module",
   "scripts": {
     "check": "node ./scripts/check.mjs"

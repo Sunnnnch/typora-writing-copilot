@@ -1,7 +1,7 @@
 export const messages = {
   en: {
-    "app.productName": "Typora Writing Copilot",
-    "app.launcher": "Copilot",
+    "app.productName": "Typrism",
+    "app.launcher": "Typrism",
     "app.kicker": "Typora AI",
     "auth.apiKeyPreview": "API key transport uses the saved local provider settings.",
     "panel.header.history": "History",
@@ -143,7 +143,7 @@ export const messages = {
     "provider.openrouter": "OpenRouter",
     "provider.openai-compatible": "OpenAI Compatible",
     "provider.gemini": "Gemini",
-    "provider.systemPrompt": "You are Typora Writing Copilot. Respond in clear Markdown that works well inside a Typora document. Keep rewrites and summaries concise unless the user asks for more detail.",
+    "provider.systemPrompt": "You are Typrism, a Typora AI writing assistant. Respond in clear Markdown that works well inside a Typora document. Keep rewrites and summaries concise unless the user asks for more detail.",
     "provider.task.rewrite": "Rewrite the text so it is clearer and smoother while preserving meaning.",
     "provider.task.shorten": "Shorten the text while preserving the key facts and tone.",
     "provider.task.expand": "Expand the text with one helpful paragraph that keeps the same topic and tone.",
@@ -242,8 +242,8 @@ export const messages = {
     "search.source.seedNote": "Placeholder query seed for the future live search flow.",
   },
   "zh-CN": {
-    "app.productName": "Typora 写作副驾",
-    "app.launcher": "助手",
+    "app.productName": "Typrism",
+    "app.launcher": "Typrism",
     "app.kicker": "Typora AI",
     "auth.apiKeyPreview": "API Key 传输会使用本地保存的服务商设置。",
     "panel.header.history": "历史记录",
@@ -385,7 +385,7 @@ export const messages = {
     "provider.openrouter": "OpenRouter",
     "provider.openai-compatible": "OpenAI 兼容接口",
     "provider.gemini": "Gemini",
-    "provider.systemPrompt": "你是 Typora Writing Copilot。请用适合直接放进 Typora 文档的清晰 Markdown 回复。改写和总结任务默认保持简洁，除非用户明确要求展开。",
+    "provider.systemPrompt": "你是 Typrism，一个 Typora AI 写作助手。请用适合直接放进 Typora 文档的清晰 Markdown 回复。改写和总结任务默认保持简洁，除非用户明确要求展开。",
     "provider.task.rewrite": "请在不改变原意的前提下，把文本改写得更清晰、更顺滑。",
     "provider.task.shorten": "请压缩文本，但保留关键信息和原有语气。",
     "provider.task.expand": "请围绕同一主题和语气补充一段有帮助的扩展内容。",

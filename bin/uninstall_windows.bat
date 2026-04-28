@@ -2,7 +2,7 @@
 setlocal
 set "LOG=%~dp0uninstall_windows.log"
 echo [%date% %time%] Starting uninstaller > "%LOG%"
-echo Starting Typora Writing Copilot uninstaller...
+echo Starting Typrism uninstaller...
 echo If Windows shows a UAC prompt, click Yes.
 powershell -ExecutionPolicy Bypass -NoProfile -File "%~dp0uninstall_windows.ps1" %* >> "%LOG%" 2>&1
 echo.>> "%LOG%"

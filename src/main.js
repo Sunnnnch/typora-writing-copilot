@@ -11,7 +11,7 @@ import { createResultActions } from "./core/result-actions.js";
 import { createWebSearchService } from "./search/web-search.js";
 import { createWorkspaceStore } from "./state/workspace-store.js";
 
-export function createWritingCopilotApp(overrides = {}) {
+export function createTyprismApp(overrides = {}) {
   const i18n = createI18n(overrides.i18n);
   const config = createDefaultConfig(overrides.config);
   const store = createWorkspaceStore({ config });
@@ -56,3 +56,6 @@ export function createWritingCopilotApp(overrides = {}) {
     },
   };
 }
+
+export const createTypilotApp = createTyprismApp;
+export const createWritingCopilotApp = createTyprismApp;

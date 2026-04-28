@@ -6,7 +6,7 @@ Add-Type -AssemblyName System.Drawing
 $scriptDir = Split-Path -Parent $PSCommandPath
 $installScriptPath = Join-Path $scriptDir "install_windows.ps1"
 $uninstallScriptPath = Join-Path $scriptDir "uninstall_windows.ps1"
-$fallbackPluginHome = Join-Path $env:LOCALAPPDATA "TyporaWritingCopilot"
+$fallbackPluginHome = Join-Path $env:LOCALAPPDATA "Typrism"
 
 function Add-UniqueItem {
     param(
@@ -90,7 +90,7 @@ function Get-DefaultPluginHomeForTyporaPath {
 
     try {
         $resolved = [System.IO.Path]::GetFullPath($TyporaPath)
-        return (Join-Path $resolved "typora-writing-copilot")
+        return (Join-Path $resolved "typrism")
     } catch {
         return $fallbackPluginHome
     }
@@ -183,7 +183,7 @@ function Invoke-WorkerScript {
 }
 
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Typora 写作副驾安装器"
+$form.Text = "Typrism 安装器"
 $form.StartPosition = "CenterScreen"
 $form.Size = New-Object System.Drawing.Size(760, 560)
 $form.MinimumSize = New-Object System.Drawing.Size(760, 560)
@@ -191,7 +191,7 @@ $form.MaximizeBox = $false
 $form.FormBorderStyle = "FixedDialog"
 
 $titleLabel = New-Object System.Windows.Forms.Label
-$titleLabel.Text = "Typora 写作副驾安装器"
+$titleLabel.Text = "Typrism 安装器"
 $titleLabel.Font = New-Object System.Drawing.Font("Segoe UI", 14, [System.Drawing.FontStyle]::Bold)
 $titleLabel.AutoSize = $true
 $titleLabel.Location = New-Object System.Drawing.Point(20, 18)
@@ -254,7 +254,7 @@ $browsePluginButton.Add_Click({
 $form.Controls.Add($browsePluginButton)
 
 $tipLabel = New-Object System.Windows.Forms.Label
-$tipLabel.Text = "默认会建议放到 Typora 目录下的 typora-writing-copilot 文件夹。"
+$tipLabel.Text = "默认会建议放到 Typora 目录下的 typrism 文件夹。"
 $tipLabel.AutoSize = $true
 $tipLabel.Location = New-Object System.Drawing.Point(22, 213)
 $form.Controls.Add($tipLabel)
@@ -271,7 +271,7 @@ $autoDetectButton.Add_Click({
     } else {
         [System.Windows.Forms.MessageBox]::Show(
             "没有自动识别到 Typora，请手动选择 Typora 目录。",
-            "Typora 写作副驾",
+            "Typrism",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Information
         ) | Out-Null
@@ -330,7 +330,7 @@ function Run-Action {
     if ($Mode -eq "install" -and [string]::IsNullOrWhiteSpace($pluginHome)) {
         [System.Windows.Forms.MessageBox]::Show(
             "请选择插件目录。",
-            "Typora 写作副驾",
+            "Typrism",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Warning
         ) | Out-Null
@@ -340,7 +340,7 @@ function Run-Action {
     if ($Mode -eq "install" -and [string]::IsNullOrWhiteSpace($typoraPath)) {
         $confirmAuto = [System.Windows.Forms.MessageBox]::Show(
             "Typora 目录为空。安装器会尝试自动识别，是否继续？",
-            "Typora 写作副驾",
+            "Typrism",
             [System.Windows.Forms.MessageBoxButtons]::YesNo,
             [System.Windows.Forms.MessageBoxIcon]::Question
         )
@@ -368,14 +368,14 @@ function Run-Action {
         if ($result.ExitCode -eq 0) {
             [System.Windows.Forms.MessageBox]::Show(
                 $doneText,
-                "Typora 写作副驾",
+                "Typrism",
                 [System.Windows.Forms.MessageBoxButtons]::OK,
                 [System.Windows.Forms.MessageBoxIcon]::Information
             ) | Out-Null
         } else {
             [System.Windows.Forms.MessageBox]::Show(
                 ("{0}失败，请查看日志输出。`n`n日志文件：{1}" -f $failedActionText, $result.LogPath),
-                "Typora 写作副驾",
+                "Typrism",
                 [System.Windows.Forms.MessageBoxButtons]::OK,
                 [System.Windows.Forms.MessageBoxIcon]::Error
             ) | Out-Null
@@ -384,7 +384,7 @@ function Run-Action {
         $outputTextBox.Text = $_.Exception.Message
         [System.Windows.Forms.MessageBox]::Show(
             $_.Exception.Message,
-            "Typora 写作副驾",
+            "Typrism",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Error
         ) | Out-Null

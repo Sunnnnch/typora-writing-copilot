@@ -1,2 +1,9 @@
-export { createWritingCopilotApp } from "./main.js";
-export { mountWritingCopilot, autoMountWritingCopilot } from "./browser/bootstrap.js";
+export { createTyprismApp, createTypilotApp, createWritingCopilotApp } from "./main.js";
+export {
+  mountTyprism,
+  autoMountTyprism,
+  mountTypilot,
+  autoMountTypilot,
+  mountWritingCopilot,
+  autoMountWritingCopilot,
+} from "./browser/bootstrap.js";

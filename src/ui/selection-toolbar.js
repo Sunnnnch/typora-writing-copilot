@@ -1,4 +1,4 @@
-import { ensureWritingCopilotStyles } from "./styles.js";
+import { ensureTyprismStyles } from "./styles.js";
 
 const ACTIONS = ["rewrite", "shorten", "expand", "translate", "summarize", "search"];
 
@@ -72,7 +72,7 @@ export function createSelectionToolbar({ shell, panel, i18n }) {
   }
 
   function createRoot() {
-    ensureWritingCopilotStyles();
+    ensureTyprismStyles();
 
     root = document.createElement("div");
     root.className = "twc-toolbar";

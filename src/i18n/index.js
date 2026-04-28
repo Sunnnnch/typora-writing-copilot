@@ -1,6 +1,8 @@
 import { messages } from "./messages.js";
 
-const STORAGE_KEY = "typora-writing-copilot.locale";
+const STORAGE_KEY = "typrism.locale";
+const LEGACY_TYPILOT_STORAGE_KEY = "typilot.locale";
+const LEGACY_WRITING_COPILOT_STORAGE_KEY = "typora-writing-copilot.locale";
 const FALLBACK_LOCALE = "en";
 
 function resolveLocale(preference) {
@@ -24,7 +26,11 @@ function interpolate(template, vars = {}) {
 export function createI18n(overrides = {}) {
   const listeners = new Set();
   const initialPreference = overrides.preference
-    || (typeof localStorage !== "undefined" ? localStorage.getItem(STORAGE_KEY) : null)
+    || (typeof localStorage !== "undefined"
+      ? localStorage.getItem(STORAGE_KEY)
+        || localStorage.getItem(LEGACY_TYPILOT_STORAGE_KEY)
+        || localStorage.getItem(LEGACY_WRITING_COPILOT_STORAGE_KEY)
+      : null)
     || "auto";
 
   const state = {

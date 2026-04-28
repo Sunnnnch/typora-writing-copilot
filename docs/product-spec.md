@@ -2,7 +2,7 @@
 
 ## Product Definition
 
-Typora Writing Copilot is a standalone Typora plugin focused on writing assistance.
+Typrism is a standalone Typora plugin focused on writing assistance.
 It should feel like a native writing companion instead of a full-screen chat application.
 
 ## Target Scenarios

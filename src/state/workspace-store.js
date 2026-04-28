@@ -1,4 +1,6 @@
-const STORAGE_KEY = "typora-writing-copilot.workspace";
+const STORAGE_KEY = "typrism.workspace";
+const LEGACY_TYPILOT_STORAGE_KEY = "typilot.workspace";
+const LEGACY_WRITING_COPILOT_STORAGE_KEY = "typora-writing-copilot.workspace";
 
 function createConversationId() {
   return `conv_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
@@ -153,7 +155,9 @@ function safeParseState(config) {
   }
 
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY)
+      || localStorage.getItem(LEGACY_TYPILOT_STORAGE_KEY)
+      || localStorage.getItem(LEGACY_WRITING_COPILOT_STORAGE_KEY);
     if (!raw) {
       return buildInitialState(config);
     }

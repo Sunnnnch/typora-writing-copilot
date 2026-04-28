@@ -1,11 +1,20 @@
-export const WRITING_COPILOT_STYLE_ID = "typora-writing-copilot-style";
+export const TYPRISM_STYLE_ID = "typrism-style";
+export const TYPILOT_STYLE_ID = "typilot-style";
+export const WRITING_COPILOT_STYLE_ID = TYPRISM_STYLE_ID;
 
-export function ensureWritingCopilotStyles() {
+export function ensureTyprismStyles() {
   if (typeof document === "undefined") return;
-  if (document.getElementById(WRITING_COPILOT_STYLE_ID)) return;
+  if (document.getElementById(TYPRISM_STYLE_ID)) return;
+
+  const legacyStyle = document.getElementById(TYPILOT_STYLE_ID)
+    || document.getElementById("typora-writing-copilot-style");
+  if (legacyStyle) {
+    legacyStyle.id = TYPRISM_STYLE_ID;
+    return;
+  }
 
   const style = document.createElement("style");
-  style.id = WRITING_COPILOT_STYLE_ID;
+  style.id = TYPRISM_STYLE_ID;
   style.textContent = `
     :root {
       --twc-bg: linear-gradient(180deg, #fbfaf6 0%, #f4efe6 100%);
@@ -914,3 +923,6 @@ export function ensureWritingCopilotStyles() {
 
   document.head.appendChild(style);
 }
+
+export const ensureTypilotStyles = ensureTyprismStyles;
+export const ensureWritingCopilotStyles = ensureTyprismStyles;

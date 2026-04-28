@@ -1,13 +1,17 @@
 [English](./README.md) | [简体中文](./README.zh-CN.md)
 
-# Typora Writing Copilot
+<p align="center">
+  <img src="./docs/assets/typrism-icon.svg" alt="Typrism icon" width="96" height="96">
+</p>
 
-Typora Writing Copilot is a standalone AI writing assistant for Typora.
+# Typrism
+
+Typrism is a standalone AI writing assistant for Typora.
 
 ## What It Is
 
 This project is not a generic chat page embedded in Typora.
-It is a writing-focused copilot built around:
+It is a writing-focused assistant built around:
 
 - multi-turn chat
 - selection rewrite
@@ -72,7 +76,7 @@ CLI alternatives:
 ```
 
 ```powershell
-.\bin\install_windows.bat -TyporaPath "C:\Program Files\Typora" -PluginHome "D:\TyporaPlugins\WritingCopilot"
+.\bin\install_windows.bat -TyporaPath "C:\Program Files\Typora" -PluginHome "D:\TyporaPlugins\Typrism"
 ```
 
 Parameters:
@@ -87,7 +91,7 @@ If you use a custom `-PluginHome`, pass the same value to `uninstall_windows.bat
 If you still want the temporary development flow, open Typora DevTools and run:
 
 ```js
-import("file:///C:/path/to/typora-writing-copilot/src/entry-typora.js")
+import("file:///C:/path/to/typrism/src/entry-typora.js")
 ```
 
 This only affects the current Typora window and disappears after restart.

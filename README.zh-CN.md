@@ -1,8 +1,12 @@
 [English](./README.md) | 简体中文
 
-# Typora 写作副驾
+<p align="center">
+  <img src="./docs/assets/typrism-icon.svg" alt="Typrism 图标" width="96" height="96">
+</p>
 
-Typora 写作副驾是一个面向 Typora 的独立 AI 写作助手。
+# Typrism
+
+Typrism 是一个面向 Typora 的独立 AI 写作助手。
 
 ## 项目定位
 
@@ -72,7 +76,7 @@ Typora 写作副驾是一个面向 Typora 的独立 AI 写作助手。
 ```
 
 ```powershell
-.\bin\install_windows.bat -TyporaPath "C:\Program Files\Typora" -PluginHome "D:\TyporaPlugins\WritingCopilot"
+.\bin\install_windows.bat -TyporaPath "C:\Program Files\Typora" -PluginHome "D:\TyporaPlugins\Typrism"
 ```
 
 参数说明：
@@ -87,7 +91,7 @@ Typora 写作副驾是一个面向 Typora 的独立 AI 写作助手。
 如果你仍然想用临时注入的开发方式，可以打开 Typora DevTools 执行：
 
 ```js
-import("file:///C:/path/to/typora-writing-copilot/src/entry-typora.js")
+import("file:///C:/path/to/typrism/src/entry-typora.js")
 ```
 
 这种方式只影响当前 Typora 窗口，重启后失效。

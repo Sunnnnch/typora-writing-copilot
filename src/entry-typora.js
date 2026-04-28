@@ -1,4 +1,3 @@
-import { autoMountWritingCopilot } from "./index.js";
+import { autoMountTyprism } from "./index.js";
 
-autoMountWritingCopilot();
-
+autoMountTyprism();

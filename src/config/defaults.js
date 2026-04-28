@@ -1,6 +1,6 @@
 export function createDefaultConfig(overrides = {}) {
   return {
-    productName: "Typora Writing Copilot",
+    productName: "Typrism",
     ui: {
       defaultSurface: "panel",
       panelWidth: 420,

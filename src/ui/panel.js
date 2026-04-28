@@ -1,5 +1,5 @@
 import { streamText } from "../core/stream-text.js";
-import { ensureWritingCopilotStyles } from "./styles.js";
+import { ensureTyprismStyles } from "./styles.js";
 
 const MODE_OPTIONS = ["chat", "rewrite", "summarize", "ask", "search_web"];
 const SCOPE_OPTIONS = ["selection", "paragraph", "document", "none"];
@@ -35,7 +35,9 @@ const WORKFLOW_OPTIONS = [
     aliases: ["/organize", "/tidy"],
   },
 ];
-const LAUNCHER_STORAGE_KEY = "typora-writing-copilot.launcher-position";
+const LAUNCHER_STORAGE_KEY = "typrism.launcher-position";
+const LEGACY_TYPILOT_LAUNCHER_STORAGE_KEY = "typilot.launcher-position";
+const LEGACY_WRITING_COPILOT_LAUNCHER_STORAGE_KEY = "typora-writing-copilot.launcher-position";
 const FLOATING_MARGIN = 12;
 const HISTORY_LIMIT = 10;
 
@@ -376,7 +378,9 @@ function readStoredLauncherPosition() {
   if (typeof localStorage === "undefined") return null;
 
   try {
-    const raw = localStorage.getItem(LAUNCHER_STORAGE_KEY);
+    const raw = localStorage.getItem(LAUNCHER_STORAGE_KEY)
+      || localStorage.getItem(LEGACY_TYPILOT_LAUNCHER_STORAGE_KEY)
+      || localStorage.getItem(LEGACY_WRITING_COPILOT_LAUNCHER_STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (typeof parsed?.x !== "number" || typeof parsed?.y !== "number") {
@@ -452,7 +456,7 @@ function getDocumentIdentity(shell) {
 function markUiIsolated(node) {
   if (!node?.setAttribute) return;
   node.setAttribute("contenteditable", "false");
-  node.setAttribute("data-typora-writing-copilot", "true");
+  node.setAttribute("data-typrism", "true");
 }
 
 function shieldKeyboardBubble(node) {
@@ -1598,7 +1602,7 @@ export function createPanelController({ config, shell, session, resultActions, p
   }
 
   function createRoot() {
-    ensureWritingCopilotStyles();
+    ensureTyprismStyles();
 
     launcher = document.createElement("button");
     launcher.className = "twc-launcher";
