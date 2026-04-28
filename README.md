@@ -13,10 +13,12 @@ It is a writing-focused copilot built around:
 - selection rewrite
 - document Q&A
 - cited web search
+- writing workflows for structure analysis, AI comments, writing checks, and note organization
 
 ## Current Features
 
 - right-side AI panel
+- one-click writing workflows: document structure, cited search, AI comments, writing check, note organization
 - selection floating toolbar
 - Chinese / English runtime switching
 - conversation history bound to the current document
@@ -24,6 +26,7 @@ It is a writing-focused copilot built around:
 - replacement preview, optional auto-apply rewrite actions, and undo
 - regenerate / retry actions
 - copyable search sources
+- slash commands for workflows: `/outline`, `/cite`, `/comment`, `/check`, `/organize`
 - Typora shell adapter
 - Windows installer, uninstaller, and GUI installer
 

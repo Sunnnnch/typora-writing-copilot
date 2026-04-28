@@ -44,6 +44,14 @@ function normalizeTavilyResults(payload) {
     .filter(result => result.title && result.url);
 }
 
+function truncateSnippet(text, maxLength = 240) {
+  const normalized = String(text || "").replace(/\s+/g, " ").trim();
+  if (normalized.length <= maxLength) {
+    return normalized;
+  }
+  return `${normalized.slice(0, maxLength - 1)}...`;
+}
+
 function formatSearchSummary({ query, answer, sources, i18n }) {
   const lines = [
     i18n.t("search.live.title"),
@@ -53,13 +61,21 @@ function formatSearchSummary({ query, answer, sources, i18n }) {
   ];
 
   if (answer) {
-    lines.push(answer.trim(), "");
+    lines.push(i18n.t("search.live.answerTitle"), answer.trim(), "");
   }
 
   if (sources.length) {
+    lines.push(i18n.t("search.live.citationTitle"));
+    sources.forEach((source, index) => {
+      const snippet = truncateSnippet(source.content, 180);
+      lines.push(`- ${snippet || source.title} [${index + 1}]`);
+    });
+    lines.push("");
+
     lines.push(i18n.t("search.preview.sources"));
     sources.forEach((source, index) => {
-      const note = source.content ? ` - ${source.content}` : "";
+      const snippet = truncateSnippet(source.content);
+      const note = snippet ? ` - ${snippet}` : "";
       lines.push(`- [${index + 1}] [${source.title}](${source.url})${note}`);
     });
   } else {

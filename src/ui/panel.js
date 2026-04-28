@@ -3,6 +3,38 @@ import { ensureWritingCopilotStyles } from "./styles.js";
 
 const MODE_OPTIONS = ["chat", "rewrite", "summarize", "ask", "search_web"];
 const SCOPE_OPTIONS = ["selection", "paragraph", "document", "none"];
+const WORKFLOW_OPTIONS = [
+  {
+    id: "document_outline",
+    mode: "ask",
+    scope: "document",
+    aliases: ["/outline", "/structure"],
+  },
+  {
+    id: "citation_search",
+    mode: "search_web",
+    scope: "selection-or-paragraph",
+    aliases: ["/cite", "/source"],
+  },
+  {
+    id: "ai_commentary",
+    mode: "ask",
+    scope: "selection-or-paragraph",
+    aliases: ["/comment", "/note"],
+  },
+  {
+    id: "writing_check",
+    mode: "ask",
+    scope: "document",
+    aliases: ["/check", "/review"],
+  },
+  {
+    id: "organize_notes",
+    mode: "ask",
+    scope: "selection-or-document",
+    aliases: ["/organize", "/tidy"],
+  },
+];
 const LAUNCHER_STORAGE_KEY = "typora-writing-copilot.launcher-position";
 const FLOATING_MARGIN = 12;
 const HISTORY_LIMIT = 10;
@@ -59,6 +91,65 @@ function getQuickActionLabel(action, i18n) {
   const key = `quickAction.${action}`;
   const label = i18n.t(key);
   return label === key ? action : label;
+}
+
+function getWorkflowDefinition(workflowId) {
+  return WORKFLOW_OPTIONS.find(workflow => workflow.id === workflowId) || null;
+}
+
+function getWorkflowLabel(workflowId, i18n) {
+  const key = `workflow.${workflowId}.label`;
+  const label = i18n.t(key);
+  return label === key ? workflowId : label;
+}
+
+function getWorkflowHint(workflowId, i18n) {
+  const key = `workflow.${workflowId}.hint`;
+  const label = i18n.t(key);
+  return label === key ? "" : label;
+}
+
+function getWorkflowPrompt(workflowId, i18n) {
+  const key = `session.prompt.${workflowId}`;
+  const prompt = i18n.t(key);
+  return prompt === key ? "" : prompt;
+}
+
+function getWorkflowUserLabel(workflowId, i18n) {
+  const key = `workflow.${workflowId}.userLabel`;
+  const label = i18n.t(key);
+  return label === key ? getWorkflowLabel(workflowId, i18n) : label;
+}
+
+function parseWorkflowCommand(prompt) {
+  const trimmed = String(prompt || "").trim();
+  if (!trimmed.startsWith("/")) return null;
+
+  const command = trimmed.split(/\s+/, 1)[0].toLowerCase();
+  const workflow = WORKFLOW_OPTIONS.find(item => item.aliases.includes(command));
+  if (!workflow) return null;
+
+  return {
+    workflow,
+    command,
+    rest: trimmed.slice(command.length).trim(),
+  };
+}
+
+function resolveWorkflowScope(workflow, capture, hasExplicitPrompt = false) {
+  if (workflow.id === "citation_search" && hasExplicitPrompt) {
+    return "none";
+  }
+
+  if (workflow.scope === "selection-or-paragraph") {
+    return capture?.text ? "selection" : "paragraph";
+  }
+
+  if (workflow.scope === "selection-or-document") {
+    return capture?.text ? "selection" : "document";
+  }
+
+  return workflow.scope;
 }
 
 function isSelectionEditIntent(intent, mode) {
@@ -184,6 +275,7 @@ export function createPanelController({ config, shell, session, resultActions, p
   let suppressLauncherClick = false;
   let activeRequestController = null;
   let activeRequestVersion = 0;
+  let pendingWorkflowContext = null;
 
   const state = {
     open: false,
@@ -600,6 +692,7 @@ export function createPanelController({ config, shell, session, resultActions, p
       mode: requestMeta.mode,
       scope: requestMeta.scope,
       prompt: requestMeta.prompt,
+      contextOverride: requestMeta.contextOverride,
       intent: requestMeta.intent,
       selectionCapture: cloneSelectionCapture(requestMeta.selectionCapture),
       userLabel: requestMeta.userLabel,
@@ -856,6 +949,21 @@ export function createPanelController({ config, shell, session, resultActions, p
     elements.settingsStatus.textContent = activeStatus.text;
   }
 
+  function syncWorkflowButtons() {
+    if (!elements?.workflows) return;
+
+    WORKFLOW_OPTIONS.forEach(workflow => {
+      const button = elements.workflows.querySelector(`[data-workflow-id="${workflow.id}"]`);
+      if (!button) return;
+
+      const label = button.querySelector('[data-role="workflow-label"]');
+      const hint = button.querySelector('[data-role="workflow-hint"]');
+      label.textContent = getWorkflowLabel(workflow.id, i18n);
+      hint.textContent = getWorkflowHint(workflow.id, i18n);
+      button.title = `${label.textContent}\n${hint.textContent}`.trim();
+    });
+  }
+
   function syncUi() {
     if (!elements) return;
 
@@ -895,6 +1003,7 @@ export function createPanelController({ config, shell, session, resultActions, p
     mode,
     scope,
     prompt,
+    contextOverride = null,
     intent = mode,
     selectionCapture = null,
     userLabel = null,
@@ -925,6 +1034,7 @@ export function createPanelController({ config, shell, session, resultActions, p
       mode: effectiveMode,
       scope: effectiveScope,
       prompt,
+      contextOverride,
       intent,
       selectionCapture: capture,
       userLabel,
@@ -974,6 +1084,7 @@ export function createPanelController({ config, shell, session, resultActions, p
         intent,
         scope: effectiveScope,
         prompt,
+        contextOverride,
         selectionCapture: capture,
         onDelta,
         historyMessages,
@@ -1092,6 +1203,53 @@ export function createPanelController({ config, shell, session, resultActions, p
     }
   }
 
+  async function runWorkflow(workflowId, options = {}) {
+    if (busy) return null;
+
+    const workflow = getWorkflowDefinition(workflowId);
+    if (!workflow) return null;
+
+    const explicitPrompt = String(options.promptOverride || "").trim();
+    const pointerContext = options.context || (
+      pendingWorkflowContext?.workflowId === workflowId ? pendingWorkflowContext : null
+    );
+    const liveCapture = shell.captureSelection();
+    const fallbackCapture = pointerContext ? pointerContext.selectionCapture : state.selectionCapture;
+    const capture = cloneSelectionCapture(
+      liveCapture?.text ? liveCapture : fallbackCapture,
+    );
+    const scope = resolveWorkflowScope(workflow, capture, Boolean(explicitPrompt));
+    const contextOverride = scope === "paragraph" && pointerContext?.paragraphText
+      ? pointerContext.paragraphText
+      : null;
+    const prompt = workflow.id === "citation_search"
+      ? explicitPrompt
+      : [
+        getWorkflowPrompt(workflow.id, i18n),
+        explicitPrompt
+          ? `${i18n.t("workflow.customRequest")}\n${explicitPrompt}`
+          : "",
+      ].filter(Boolean).join("\n\n");
+
+    updateDocumentIdentity();
+    state.open = true;
+    closeTransientLayers();
+    syncUi();
+
+    return submitRequest({
+      mode: workflow.mode,
+      scope,
+      prompt,
+      contextOverride,
+      intent: workflow.id,
+      selectionCapture: scope === "selection" ? capture : null,
+      userLabel: options.userLabel || (explicitPrompt
+        ? `${getWorkflowLabel(workflow.id, i18n)}: ${explicitPrompt}`
+        : getWorkflowUserLabel(workflow.id, i18n)),
+      persistMode: false,
+    });
+  }
+
   function syncTranslations() {
     if (!elements) return;
 
@@ -1154,6 +1312,7 @@ export function createPanelController({ config, shell, session, resultActions, p
     elements.replacePreviewNextLabel.textContent = i18n.t("panel.replacePreview.next");
     elements.replacePreviewCancel.textContent = i18n.t("panel.replacePreview.cancel");
     elements.replacePreviewConfirm.textContent = i18n.t("panel.replacePreview.confirm");
+    syncWorkflowButtons();
 
     setSelectOptions(elements.provider, providers.list(), providerId => getProviderLabel(providerId, i18n), state.providerId);
     setSelectOptions(elements.mode, MODE_OPTIONS, mode => getModeLabel(mode, i18n), state.mode);
@@ -1347,6 +1506,14 @@ export function createPanelController({ config, shell, session, resultActions, p
           <select class="twc-select" data-role="language"></select>
         </label>
       </div>
+      <div class="twc-workflows" data-role="workflows">
+        ${WORKFLOW_OPTIONS.map(workflow => `
+          <button type="button" class="twc-workflow-button" data-workflow-id="${workflow.id}">
+            <span data-role="workflow-label"></span>
+            <span data-role="workflow-hint"></span>
+          </button>
+        `).join("")}
+      </div>
       <div class="twc-messages" data-role="messages"></div>
       <div class="twc-status" data-role="status"></div>
       <div class="twc-composer">
@@ -1439,6 +1606,7 @@ export function createPanelController({ config, shell, session, resultActions, p
       mode: root.querySelector('[data-role="mode"]'),
       scope: root.querySelector('[data-role="scope"]'),
       language: root.querySelector('[data-role="language"]'),
+      workflows: root.querySelector('[data-role="workflows"]'),
       messages: root.querySelector('[data-role="messages"]'),
       status: root.querySelector('[data-role="status"]'),
       input: root.querySelector('[data-role="input"]'),
@@ -1751,11 +1919,47 @@ export function createPanelController({ config, shell, session, resultActions, p
       i18n.setPreference(elements.language.value);
     });
 
+    elements.workflows.addEventListener("pointerdown", event => {
+      const target = event.target.closest("[data-workflow-id]");
+      if (!target) return;
+
+      const selectionCapture = shell.captureSelection();
+      pendingWorkflowContext = {
+        workflowId: target.dataset.workflowId,
+        selectionCapture: cloneSelectionCapture(selectionCapture),
+        paragraphText: shell.getCurrentParagraphText(selectionCapture) || "",
+      };
+    }, true);
+
+    elements.workflows.addEventListener("click", async event => {
+      const target = event.target.closest("[data-workflow-id]");
+      if (!target || busy) return;
+      event.preventDefault();
+      event.stopPropagation();
+      const context = pendingWorkflowContext?.workflowId === target.dataset.workflowId
+        ? pendingWorkflowContext
+        : null;
+      await runWorkflow(target.dataset.workflowId, { context });
+      pendingWorkflowContext = null;
+    });
+
     elements.send.addEventListener("click", async () => {
       if (busy) return;
       const prompt = elements.input.value.trim();
       if (!prompt && state.mode === "chat") return;
       elements.input.value = "";
+
+      const workflowCommand = parseWorkflowCommand(prompt);
+      if (workflowCommand) {
+        await runWorkflow(workflowCommand.workflow.id, {
+          promptOverride: workflowCommand.rest,
+          userLabel: workflowCommand.rest
+            ? `${getWorkflowLabel(workflowCommand.workflow.id, i18n)}: ${workflowCommand.rest}`
+            : getWorkflowUserLabel(workflowCommand.workflow.id, i18n),
+        });
+        return;
+      }
+
       await submitRequest({
         mode: state.mode,
         scope: state.scope,

@@ -8,7 +8,13 @@ function toMode(action) {
     case "summarize":
       return "summarize";
     case "search":
+    case "citation_search":
       return "search_web";
+    case "document_outline":
+    case "ai_commentary":
+    case "writing_check":
+    case "organize_notes":
+      return "ask";
     default:
       return "chat";
   }
@@ -27,7 +33,16 @@ function defaultPromptForAction(action, i18n) {
     case "summarize":
       return i18n.t("session.prompt.summarize");
     case "search":
+    case "citation_search":
       return "";
+    case "document_outline":
+      return i18n.t("session.prompt.document_outline");
+    case "ai_commentary":
+      return i18n.t("session.prompt.ai_commentary");
+    case "writing_check":
+      return i18n.t("session.prompt.writing_check");
+    case "organize_notes":
+      return i18n.t("session.prompt.organize_notes");
     default:
       return "";
   }
@@ -72,12 +87,15 @@ export function createChatSession({ shell, providers, search, i18n }) {
       intent = mode,
       scope,
       prompt,
+      contextOverride = null,
       selectionCapture = null,
       onDelta = null,
       historyMessages = [],
       abortSignal = null,
     }) {
-      const context = getContextText(shell, scope, selectionCapture);
+      const context = contextOverride == null
+        ? getContextText(shell, scope, selectionCapture)
+        : String(contextOverride || "");
 
       if (scope === "document" && context) {
         const allowed = await shell.confirmSendFullDocument();

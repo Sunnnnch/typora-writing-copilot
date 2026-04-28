@@ -166,6 +166,49 @@ export function ensureWritingCopilotStyles() {
       display: grid;
     }
 
+    .twc-workflows {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+      padding: 8px;
+      border: 1px solid var(--twc-border);
+      border-radius: 16px;
+      background: rgba(255, 253, 247, 0.62);
+    }
+
+    .twc-workflow-button {
+      display: grid;
+      gap: 3px;
+      min-width: 0;
+      padding: 9px 10px;
+      border: 1px solid var(--twc-border);
+      border-radius: 13px;
+      background: rgba(255, 255, 255, 0.48);
+      color: var(--twc-text);
+      cursor: pointer;
+      font-family: var(--twc-font);
+      text-align: left;
+    }
+
+    .twc-workflow-button span:first-child {
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    .twc-workflow-button span:last-child {
+      color: var(--twc-muted);
+      font-size: 10px;
+      line-height: 1.35;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .twc-workflow-button:last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+
     .twc-sheet {
       top: 66px;
       bottom: 14px;
@@ -653,6 +696,7 @@ export function ensureWritingCopilotStyles() {
     .twc-toolbar-trigger:hover,
     .twc-history-item-main:hover,
     .twc-history-item-delete:hover,
+    .twc-workflow-button:hover,
     .twc-icon-button:hover,
     .twc-button:hover,
     .twc-launcher:hover {
@@ -683,6 +727,14 @@ export function ensureWritingCopilotStyles() {
 
       .twc-provider-browser {
         grid-template-columns: 1fr;
+      }
+
+      .twc-workflows {
+        grid-template-columns: 1fr;
+      }
+
+      .twc-workflow-button:last-child:nth-child(odd) {
+        grid-column: auto;
       }
 
       .twc-replace-preview-grid {

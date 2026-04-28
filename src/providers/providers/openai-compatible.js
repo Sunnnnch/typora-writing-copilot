@@ -34,6 +34,16 @@ function getTaskInstruction(intent, i18n) {
       return i18n.t("provider.task.summarize");
     case "ask":
       return i18n.t("provider.task.ask");
+    case "document_outline":
+      return i18n.t("provider.task.document_outline");
+    case "ai_commentary":
+      return i18n.t("provider.task.ai_commentary");
+    case "writing_check":
+      return i18n.t("provider.task.writing_check");
+    case "organize_notes":
+      return i18n.t("provider.task.organize_notes");
+    case "citation_search":
+      return i18n.t("provider.task.citation_search");
     default:
       return "";
   }
