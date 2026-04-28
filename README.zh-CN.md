@@ -1,7 +1,7 @@
 [English](./README.md) | 简体中文
 
 <p align="center">
-  <img src="./docs/assets/typrism-icon.svg" alt="Typrism 图标" width="96" height="96">
+  <img src="./docs/assets/typrism-launcher-icon.svg" alt="Typrism 图标" width="96" height="96">
 </p>
 
 # Typrism
